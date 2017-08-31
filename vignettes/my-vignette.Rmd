@@ -1,0 +1,335 @@
+---
+title: "GAMMIT: Denoising and visualization of Contigency Tables with covariates "
+author: "Genevieve Robin"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+*Generalized Additive Main Effects and Multiplicative Interaction Thresholded* (GAMMIT) is an extension of the log-bilinear model (also referred to as the GAMMI or RC model) for Contingency Table analysis. It adds the two following features to the classical log-bilinear model 
+
+- regularization 
+- incorporation of covariates. 
+
+This vignette illustrates the properties of the method and provides code examples on an ecology case study, with the analysis of the Aravo data. 
+
+# Reminder on the log-bilinear model
+Consider an $m_1\times m_2$ observation matrix of counts $Y=\left(y_{ij}\right)$ with independent cells of means $\mathbb{E}[y_{ij}]=\exp(\bar{x}_{ij})$. 
+Log-linear models \citep{Agresti13,  Christensen90} describe the structure of the mean matrix $\bar{X}=\left(\bar{x}_{ij}\right)$. The model is written as follows:
+\begin{equation}
+\label{eq:saturated-log-linear}
+\bar{x}_{ij}=\bar{\alpha}_i+\bar{\beta}_j+\bar{\Theta}_{ij}\text{, }\operatorname{rank}(\Theta)=K.
+\end{equation}
+Here $\bar{\alpha}_i$ (resp. $\bar{\beta}_j$) accounts for the main additive effect of row $i$ (resp. column $j$) while $\bar{\Theta}_{ij}$ is a row-column interaction term.
+In ecological applications, parameters $\bar{\alpha}_i$ correspond to environment effects, while the $\bar{\beta}_j$ correspond to species effects.
+This model is also known as the RC($K$) model (RC for row-column) or
+the generalized additive main effects and multiplicative interaction (GAMMI) model \citep{Good85, falg98, Gow11c, JosseFithian2016}.
+It assumes that the interaction matrix $\bar{\Theta}$ has fixed rank $K\leq\min(m_1-1,m_2-1)$.
+The estimation of the means $\exp(\bar{x}_{ij})$ is then by maximizing a Poisson likelihood log-likelihood, defined for $X\in \mathbb{R}^{m_1\times m_2}$ by
+\begin{equation}
+\label{eq:likelihood}
+\begin{aligned}
+\Phi_Y(X)=-\frac{1}{m_1m_2}\sum_{i=1}^{m_1}\sum_{j=1}^{m_2}\left( y_{ij}x_{ij} - \exp(x_{ij})\right).
+\end{aligned}
+\end{equation}
+
+# The GAMMIT model
+GAMMIT is a two-fold extension of the log-bilinear model. 
+First, it allows to incorporate general covariates. Secondly, it improves on the maximum likelihood estimation by including a regularization through the nuclear norm penalty of the interaction matrix. The model is described as follows. 
+Let $R\in\mathbb{R}^{m_1\times K_1}$ (resp. $C\in\mathbb{R}^{K_2\times m_2}$) be matrices of known row (resp. column) covariates, and $\bar{\alpha} \in \mathbb{R}^{K_1\times m_2}$ (resp. $\bar{\beta} \in \mathbb{R}^{m_1\times K_2}$) be unknown parameters. We model the matrix $\bar{X}$ as follows:
+\begin{equation}
+\label{eq:log-bilinear-cov}
+\bar{X}=R\bar{\alpha}+\bar{\beta}C+\bar{\Theta}.
+\end{equation}
+In ecology, the row features $R$ embed geographical information about the environments (slope, temperature, etc.), and $C$ codes  physical traits about species (height, mass, etc.). The matrices $\bar{\alpha}$ and $\bar{\beta}$ can code for main effects due to the covariates, but also for interactions. The coefficient $\bar{\alpha}_{ij}$ is large if large values of the $j$-th environment covariate leads to large abundances of species $i$. Similarly the coefficient $\bar{\beta}_{ij}$ is large if large values of the $i$-th species covariate leads to large abundances in environment $j$.
+Matrix $\bar{\Theta}$ corresponds to the interaction between species and environments, which is unexplained by the known covariates $R$ and $C$, but nonetheless influences the observations. 
+
+We perform the estimation by maximizing a penalized Poisson negative log-likelihood and obtain estimators which depend on the regularization parameter $\lambda$:
+
+\begin{equation}
+\label{eq:estimator1}
+\begin{aligned}
+\tilde{\alpha}_{\lambda},\tilde{\beta}_{\lambda},\tilde{\Theta}_{\lambda}=\underset{\substack{R\alpha+\beta C+\Theta\in\mathcal{K}\\\Theta\in \mathcal{V}^{\perp}}}{\text{argmin}}\quad \phi_Y(\alpha,\beta,\Theta)+\lambda\left\|{\Theta}\right\|_*.
+\end{aligned}
+\end{equation}
+
+# The Aravo dataset
+The Aravo dataset contains the abundances of 82 species of Alpine plants across 75 environments. Species traits and environmental variables - i.e. covariates - are also available. We use this dataset to provide code examples to use the gammit package and to illustrate the advantage of using gammit to regularize and incorporate covariates.
+
+```{r load-data}
+data(aravo)
+summary(aravo)
+```
+
+
+```{r gammit}
+# Define projection on aravo covariates
+aravo_projection=function(X){
+  X = as.matrix(X)
+  p = function(X, Xr, Xc){
+  return(X - Xr%*%t(Xr)%*%X - X%*%Xc%*%t(Xc) + Xr%*%t(Xr)%*%X%*%Xc%*%t(Xc))
+}
+  return(p(X, aravo$R, aravo$C))
+}
+
+
+
+test = gammit(aravo$table[1:20,1:25], aravo$R[1:20,], aravo$C[1:25,])
+
+Y = aravo$table[1:20,1:25]
+R = aravo$R[1:20,]
+C = aravo$C[1:25,]
+# Run GAMMIT with row/column indices as covariates ---------------------------------------------------------
+
+## Compute lambda_QUT with row/column indices as covariates
+lambda.q.RC=lambda_QUT(aravo$spe, projection = default_projection, quantile = 0.95, n = 1e3)
+
+## Run GAMMIT with row/column indices as covariates
+aravo.QUT.RC=admm_algorithm(as.matrix(aravo$spe), lambda.q.RC, proj)
+#save(aravo.QUT.RC, file="results/aravo.QUT.RC.Rdata")
+load("results/aravo.QUT.RC.Rdata")
+
+## Extract parameters
+mu.QUT.RC=mean(aravo.QUT.RC$X)
+alpha.QUT.RC=rowMeans(aravo.QUT.RC$X-mu.QUT.RC)
+beta.QUT.RC=colMeans(aravo.QUT.RC$X-mu.QUT.RC)
+rank.QUT.RC=aravo.QUT.RC$rank
+U=aravo.QUT.RC$U
+udv=svd(U)
+u.QUT.RC=udv$u
+v.QUT.RC=udv$v
+d.QUT.RC=udv$d
+
+# Scale with singular values oh Theta
+u.QUT.RC=u.QUT.RC%*%diag(sqrt(d.QUT.RC))
+v.QUT.RC=v.QUT.RC%*%diag(sqrt(d.QUT.RC))
+
+species.QUT.RC=data.frame(v.QUT.RC)[,1:2]
+names(species.QUT.RC)=c("v1","v2")
+rownames(species.QUT.RC)=names(aravo$spe)
+species.QUT.RC$name=rownames(species.QUT.RC)
+species.QUT.RC$color="species"
+
+env.QUT.RC=data.frame(u.QUT.RC)[,1:2]
+names(env.QUT.RC)=c("v1","v2")
+rownames(env.QUT.RC)=rownames(aravo$spe)
+env.QUT.RC$name="o"
+env.QUT.RC$color="environments"
+
+coord.QUT.RC=rbind.data.frame(species.QUT.RC,env.QUT.RC)
+U=u.QUT.RC
+V=v.QUT.RC
+
+
+# Run GAMMIT with known covariates ---------------------------------------------------------
+
+## Compute lambda_QUT with known covariates (this takes 47 minutes)
+proc=Sys.time()
+lambda.q=lambda.QUT_cov(aravo$spe, proj=proj.aravo, 0.95, 1e2)
+Sys.time()-proc
+
+## Run GAMMIT with known covariates
+proc=Sys.time()
+aravo.QUT=gammit(as.matrix(aravo$spe), lambda=lambda.q, proj.aravo)
+Sys.time()-proc
+
+save(aravo.QUT, file="aravo.QUT.Rdata")
+
+load("aravo.QUT.Rdata")
+
+## Extract parameters
+mu.QUT=mean(aravo.QUT$X)
+alpha.QUT=rowMeans(aravo.QUT$X-mu.QUT)
+beta.QUT=colMeans(aravo.QUT$X-mu.QUT)
+rank.QUT=aravo.QUT$rank
+U=aravo.QUT$U
+udv=svd(U)
+u.QUT=udv$u
+v.QUT=udv$v
+d.QUT=udv$d
+
+u.QUT=u.QUT%*%diag(sqrt(d.QUT))
+v.QUT=v.QUT%*%diag(sqrt(d.QUT))
+
+species.QUT=data.frame(v.QUT)[,1:2]
+names(species.QUT)=c("v1","v2")
+rownames(species.QUT)=names(aravo$spe)
+species.QUT$name=rownames(species.QUT)
+species.QUT$color="species"
+
+env.QUT=data.frame(u.QUT)[,1:2]
+names(env.QUT)=c("v1","v2")
+rownames(env.QUT)=rownames(aravo$spe)
+env.QUT$name="o"
+env.QUT$color="environments"
+coord.QUT=rbind.data.frame(species.QUT,env.QUT)
+
+
+# Plot correlation circles for aravo.QUT.RC ------------------------------------------------------------
+U=u.QUT.RC
+V=v.QUT.RC
+
+
+distance.QUT.RC=as.matrix(pdist(u.QUT.RC,v.QUT.RC))
+rownames(distance.QUT.RC)=rownames(aravo$spe)
+colnames(distance.QUT.RC)=colnames(aravo$spe)
+which(distance.QUT.RC==min(distance.QUT.RC),arr.ind=TRUE)
+idx.QUT.RC=sort(distance.QUT.RC,index.return=TRUE)$ix[1:10]
+idx.QUT.RC=sapply(idx.QUT.RC, function(i) which(distance.QUT.RC==distance.QUT.RC[i],arr.ind=TRUE))
+env.QUT.RC=env.QUT.RC[unique(idx.QUT.RC[1,]),]
+env.QUT.RC$name=rownames(env.QUT.RC)
+species.QUT.RC=species.QUT.RC[unique(idx.QUT.RC[2,]),]
+species.QUT.RC$name=rownames(species.QUT.RC)
+
+
+don = cbind.data.frame(aravo$spe,aravo$env)
+env.traits=aravo$env[,c(1,2,3,4,6)]
+cor.env1=data.frame(sapply(1:5, function(i) cor(as.numeric(env.traits[,i]),U[,1])))
+cor.env2=data.frame(sapply(1:5, function(i) cor(as.numeric(env.traits[,i]),U[,2])))
+cor=cbind.data.frame(cor.env1,cor.env2)
+names(cor)=c("u1","u2")
+rownames(cor)=colnames(aravo$env)[c(1,2,3,4,6)]
+coord.QUT.RC=rbind.data.frame(species.QUT.RC,env.QUT.RC)
+res.ca1 = CA(10+don[unique(idx.QUT.RC[1,]),c(unique(idx.QUT.RC[2,]),83,84,86,88)], quanti.sup = 10:13, graph=FALSE)
+res.ca1$row$coord[,1:2] =  U[unique(idx.QUT.RC[1,]),1:2] 
+res.ca1$row$inertia[1:2] = aravo.QUT.RC$d[1:2]
+res.ca1$col$coord[,1:2] =  V[unique(idx.QUT.RC[2,]),1:2] 
+res.ca1$col$inertia[1:2] = aravo.QUT.RC$d[1:2]
+res.ca1$quanti.sup$coord =  cor[,1:2]
+res.ca1$svd$d=aravo.QUT.RC$d
+res.ca1$svd$U=U
+res.ca1$svd$V=V
+tmp1=res.ca1
+
+spe.traits=aravo$traits
+cor.spe1=data.frame(sapply(1:length(aravo$traits), function(i) cor(as.numeric(spe.traits[,i]),V[,1])))
+cor.spe2=data.frame(sapply(1:length(aravo$traits), function(i) cor(as.numeric(spe.traits[,i]),V[,2])))
+cor=cbind.data.frame(cor.spe1,cor.spe2)
+names(cor)=c("v1","v2")
+rownames(cor)=colnames(aravo$traits)
+dondon = cbind.data.frame(t(aravo$spe),aravo$traits)
+res.ca2 = CA(10+dondon[unique(idx.QUT.RC[2,]),c(unique(idx.QUT.RC[1,]),76:79)], quanti.sup = 8:11,graph=FALSE)
+res.ca2$row$coord[,1:2] =  V[unique(idx.QUT.RC[2,]),1:2] 
+res.ca2$row$inertia[1:2] = aravo.QUT.RC$d[1:2]
+res.ca2$col$coord[,1:2] =  U[unique(idx.QUT.RC[1,]),1:2] 
+res.ca2$col$inertia[1:2] = aravo.QUT.RC$d[1:2]
+res.ca2$quanti.sup$coord =  cor[c(1,3,6,7),1:2]
+res.ca2$svd$d=aravo.QUT.RC$d
+res.ca2$svd$U=U
+res.ca2$svd$V=V
+
+par(mfrow=c(1,2))
+jpeg(filename = "results/aravo.QUT.RC.jpg")
+plot.CA(res.ca1,choix="quanti.sup",title="")
+plot.CA(res.ca2,choix="quanti.sup",title="")
+dev.off()
+
+# Plot correlation circles for aravo.QUT ------------------------------------------------------------
+U=u.QUT
+V=v.QUT
+
+distance.QUT=as.matrix(pdist(u.QUT,v.QUT))
+rownames(distance.QUT)=rownames(aravo$spe)
+colnames(distance.QUT)=colnames(aravo$spe)
+which(distance.QUT==min(distance.QUT),arr.ind=TRUE)
+idx.QUT=sort(distance.QUT,index.return=TRUE,decreasing=FALSE)$ix[1:10]
+idx.QUT=sapply(idx.QUT, function(i) which(distance.QUT==distance.QUT[i],arr.ind=TRUE))
+env.QUT=env.QUT[unique(idx.QUT[1,]),]
+env.QUT$name=rownames(env.QUT)
+species.QUT=species.QUT[unique(idx.QUT[2,]),]
+species.QUT$name=rownames(species.QUT)
+coord.QUT=rbind.data.frame(species.QUT,env.QUT)
+
+
+don = cbind.data.frame(aravo$spe,R)
+env.traits=R[,1:4]
+cor.env1=data.frame(sapply(1:4, function(i) cor(as.numeric(env.traits[,i]),U[,1])))
+cor.env2=data.frame(sapply(1:4, function(i) cor(as.numeric(env.traits[,i]),U[,2])))
+cor=cbind.data.frame(cor.env1,cor.env2)
+names(cor)=c("u1","u2")
+rownames(cor)=colnames(R)[1:4]
+coord.QUT=rbind.data.frame(species.QUT,env.QUT)
+res.ca1 = CA(10+don[unique(idx.QUT[1,]),c(unique(idx.QUT[2,]),83:86)], quanti.sup = 9:12, graph=FALSE)
+res.ca1$row$coord[,1:2] =  U[unique(idx.QUT[1,]),1:2] 
+res.ca1$row$inertia[1:2] = aravo.QUT$d[1:2]
+res.ca1$col$coord[,1:2] =  V[unique(idx.QUT[2,]),1:2] 
+res.ca1$col$inertia[1:2] = aravo.QUT$d[1:2]
+res.ca1$quanti.sup$coord =  cor[,1:2]
+res.ca1$svd$d=aravo.QUT$d
+res.ca1$svd$U=U
+res.ca1$svd$V=V
+
+spe.traits=aravo$traits
+cor.spe1=data.frame(sapply(1:length(aravo$traits), function(i) cor(as.numeric(spe.traits[,i]),V[,1])))
+cor.spe2=data.frame(sapply(1:length(aravo$traits), function(i) cor(as.numeric(spe.traits[,i]),V[,2])))
+cor=cbind.data.frame(cor.spe1,cor.spe2)
+names(cor)=c("v1","v2")
+rownames(cor)=colnames(aravo$traits)
+dondon = cbind.data.frame(t(aravo$spe),C)
+res.ca2 = CA(10+dondon[unique(idx.QUT[2,]),c(unique(idx.QUT[1,]),76:79)], quanti.sup = 10:13, graph=FALSE)
+res.ca2$row$coord[,1:2] =  V[unique(idx.QUT[2,]),1:2] 
+res.ca2$row$inertia[1:2] = aravo.QUT$d[1:2]
+res.ca2$col$coord[,1:2] =  U[unique(idx.QUT[1,]),1:2] 
+res.ca2$col$inertia[1:2] = aravo.QUT$d[1:2]
+res.ca2$quanti.sup$coord =  cor[,1:2]
+res.ca2$svd$d=aravo.QUT$d
+res.ca2$svd$U=U
+res.ca2$svd$V=V
+par(mfrow=c(1,2))
+jpeg(filename = "results/aravo.QUT.jpg")
+plot.CA(res.ca1,choix="quanti.sup",title="",autoLab="yes")
+plot.CA(res.ca2,choix="quanti.sup",title="",autoLab="yes")
+dev.off()
+
+jpeg(filename = "results/aravo.scatter.jpg")
+par(mfrow=c(1,2))
+plot.CA(tmp1,choix="CA",title="",autoLab="yes")
+plot.CA(res.ca1,choix="CA",title="",autoLab="yes",srt=45)
+dev.off()
+
+```
+
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))
