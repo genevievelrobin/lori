@@ -23,7 +23,7 @@ objective_function = function(X, Y,  projection = default_projection, Theta, gam
   X_projected = projection(X)
   Y_rm_na = Y
   Y_rm_na[is.na(Y_rm_na)] = 0
-  return(-1 / (n) * sum(Y_rm_na * X - Omega * exp(X)) + tr(t(gamma) %*% X_projected) +
+  return(-1 / (n) * sum(Y_rm_na * X - Omega * exp(X)) + psych::tr(t(gamma) %*% X_projected) +
            (tau / 2) * norm(X_projected - Theta, type="F")^2)
 }
 
