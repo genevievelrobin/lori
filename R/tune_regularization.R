@@ -100,7 +100,8 @@ lambda_cv = function(Y, cov = FALSE, projection = default_projection, gamma_init
   n = sum(!is.na(Y))
   lambda_max = (1 / (m1 * m2)) * max(svd(projection(Y_na_rm - exp(mu + alpha + beta)))$d)
   lambda_grid = exp(seq(log(lambda_max), log(lambda_max / 1e3), length.out = 10))
-  Pi=c(Y / sum(Y))
+  Pi = c(Y / sum(Y))
+  error = rep(0, K)
   for(i in 1:K)
   {
     N = floor(8 * (n / 10))
