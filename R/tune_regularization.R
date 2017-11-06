@@ -110,7 +110,7 @@ lambda_cv = function(Y, cov = FALSE, projection = default_projection, gamma_init
     Y_sample = Y
     Y_sample[R == 0] = NA
     estimator_list = list()
-    estimator_list[[1]] = admm_algorithm(Y_sample, lambda = NULL, projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)$X
+    estimator_list[[1]] = admm_algorithm(Y_sample, cov = FALSE, lambda = NULL, projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)$X
     indices_to_predict = 1*(!is.na(Y)) - 1*(!is.na(Y_sample))
     error[1] = error[1] + norm(exp(estimator_list[[1]]$X)[indices_to_predict > 0]-Y[indices_to_predict], type="2")
     for(k in 2:(length(lambda.grid) - 1)){
