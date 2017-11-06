@@ -9,14 +9,15 @@
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
 #' lambda = lambda_QUT_covariates(Y)
-lambda_QUT_covariates = function(Y, projection = default_projection, quantile = 0.95, n = 1e4){
+lambda_QUT_covariates = function(Y, projection = default_projection, q = 0.95, n = 1e4){
   m1 = nrow(Y)
   m2 = ncol(Y)
   W = Y
   W[W < 1] = 1e-6
-  null_estimator = admm_algorithm(W, lambda = 1e3, projection = projection)
+  null_estimator = admm_algorithm(W, lambda = 1e5, projection = projection)
   X_0 = null_estimator$X - null_estimator$Theta
   lambdas = rep(0, n)
+  proc = Sys.time()
   for(i in 1:n)
   {
     Y_simul = matrix(rpois(n = m1 * m2, exp(c(X_0))), nrow = m1)
@@ -25,7 +26,8 @@ lambda_QUT_covariates = function(Y, projection = default_projection, quantile = 
     X_0_simul = null_estimator_simul$X - null_estimator_simul$Theta
     lambdas[i] = (1 / (m1 * m2)) * propack.svd(projection(Y_simul - exp(X_0_simul)), neig = 1, opts = list(maxiter = 1e5))$d
   }
-  return(quantile(lambdas, quantile)[[1]])
+  Sys.time() - proc
+  return(quantile(lambdas, q)[[1]])
 }
 
 #' Computes the threshold $\lambda_{\text{QUT}}$ with parametric bootstrap when  NO covariates are available.
@@ -39,34 +41,23 @@ lambda_QUT_covariates = function(Y, projection = default_projection, quantile = 
 #' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
 #' lambda = lambda_QUT(Y)
 
-lambda_QUT = function(Y, quantile = 0.95, n = 1e4){
+lambda_QUT = function(Y, q = 0.95, n = 1e4){
   m1 = nrow(Y)
   m2 = ncol(Y)
   W = Y
   W[W < 1] = 1e-6
   null_estimator = estimate_null_model(W)
-  mu = null_estimator$mu
-  mu = matrix(mu, nrow=m1, ncol=m2)
-  alpha = null_estimator$alpha
-  alpha = matrix(rep(alpha, m2), nrow = m1, ncol = m2)
-  beta = null_estimator$beta
-  beta = matrix(rep(beta, m1), nrow = m1, ncol = m2, byrow = TRUE)
-  X_0 = mu + alpha + beta
+  X_0 = null_estimator$X
   lambdas = rep(0,n)
   for(i in 1:n)
   {
     Y_simul = matrix(rpois(n = m1 * m2, exp(c(X_0))), nrow = m1)
     Y_simul[Y_simul <= 0] = 1e-6
-    null_estimator_simul=estimate_null(Y_simul)
-    mu_simul = null_estimator_simul$mu
-    mu_simul = matrix(mu_simul, nrow=m1, ncol=m2)
-    alpha_simul = null_estimator_simul$alpha
-    alpha_simul = matrix(rep(alpha_simul, m2), nrow = m1, ncol = m2)
-    beta_simul = null_estimator_simul$beta
-    beta_simul = matrix(rep(beta_simul, m1), nrow = m1, ncol = m2, byrow = TRUE)
-    lambdas[i]=(1 / (m1 * m2)) * propack.svd(default_projection(Y_simul - exp(mu_simul + alpha_simul + beta_simul)), neig = 1, opts = list(maxiter = 1e5))$d
+    null_estimator_simul = estimate_null_model(Y_simul)
+    lambdas[i] = (1 / (m1 * m2)) * propack.svd(default_projection(Y_simul - exp(null_estimator_simul$X)),
+                                             neig = 1, opts = list(maxiter = 1e5))$d
   }
-  return(quantile(lambdas, quantile)[[1]])
+  return(quantile(lambdas, q)[[1]])
 }
 
 
@@ -130,5 +121,6 @@ lambda_cv = function(Y, cov = FALSE, projection = default_projection, gamma_init
   }
   return(lambda.grid[which(error == min(error))])
 }
+
 
 
