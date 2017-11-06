@@ -151,9 +151,9 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   X_projected = projection(X)
   if(is.null(lambda)){
     if(cov == FALSE){
-      lambda = lambda_QUT(Y, quantile = 0.95, n = 1e3)
+      lambda = lambda_QUT(Y, q = 0.95, n = 1e3)
     } else{
-      lambda = lambda_QUT_covariates(Y, projection = projection, quantile = 0.95, n = 1e3)
+      lambda = lambda_QUT_covariates(Y, projection = projection, q = 0.95, n = 1e3)
     }
 
   }
