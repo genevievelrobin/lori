@@ -204,7 +204,7 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
     d = svd(Theta)$d
     count = count + 1
     objective[[count]] = -(1 / (m1 * m2)) * sum(Y_na_rm * X - Omega * exp(X)) + lambda * sum(d) +
-      tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(X_projected - Theta, type = "F")^2
+      psych::tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(X_projected - Theta, type = "F")^2
     residual_1 = X_projected - Theta
     residual_2 = Theta_tmp - Theta
     residual_1 = norm(residual_1, type="F")
