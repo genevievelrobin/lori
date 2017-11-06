@@ -17,13 +17,14 @@
 objective_function = function(X, Y,  projection = default_projection, Theta, gamma, tau) {
   m1 = nrow(Y)
   m2 = ncol(Y)
-  R = 1-1*is.na(Y)
-  n = sum(R > 0)
+  Omega = 1-1*is.na(Y)
+  n = sum(Omega > 0)
   X = matrix(X, nrow = m1, ncol = m2)
   X_projected = projection(X)
   Y_rm_na = Y
   Y_rm_na[is.na(Y_rm_na)] = 0
-  return(-1 / (n) * sum(Y_rm_na * X - R * exp(X)) + tr(t(gamma) %*% X_projected) + (tau / 2) * norm(X_projected - Theta, type="F")^2)
+  return(-1 / (n) * sum(Y_rm_na * X - Omega * exp(X)) + tr(t(gamma) %*% X_projected) +
+           (tau / 2) * norm(X_projected - Theta, type="F")^2)
 }
 
 #' Estimates the GAMMIT model under the constraint Theta = 0.
@@ -38,8 +39,9 @@ estimate_null_model = function(Y){
   Y[Y == 0] = 1e-6
   m1 = nrow(Y)
   m2 = ncol(Y)
-  R = 1-1*is.na(Y)
-  mu = (1 / m1) * sum(log(rowSums(Y, na.rm = TRUE))) + (1 / m2) * sum(log(colSums(Y, na.rm = TRUE))) - log(sum(Y, na.rm = TRUE))
+  Omega = 1-1*is.na(Y)
+  mu = (1 / m1) * sum(log(rowSums(Y, na.rm = TRUE))) + (1 / m2) * sum(log(colSums(Y, na.rm = TRUE))) -
+    log(sum(Y, na.rm = TRUE))
   alpha = log(rowSums(Y, na.rm = TRUE)) - (1 / m1) * sum(log(rowSums(Y, na.rm = TRUE)))
   beta = log(colSums(Y, na.rm = TRUE)) - (1 / m2) * sum(log(colSums(Y, na.rm = TRUE)))
   mu_matrix = matrix(mu, nrow = m1, ncol = m2)
@@ -57,7 +59,6 @@ estimate_null_model = function(Y){
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
 #' deviance(Y, X)
-
 deviance = function(Y, X){
   y = as.matrix(Y)
   x = as.matrix(X)
@@ -87,13 +88,13 @@ deviance = function(Y, X){
 gradient = function(X, Y, projection = default_projection, Theta, gamma, tau) {
   m1 = nrow(Y)
   m2 = ncol(Y)
-  R = 1-1*is.na(Y)
+  Omega = 1-1*is.na(Y)
   n = sum(!is.na(Y))
   X = matrix(X, nrow = m1, ncol = m2)
   X_projected = projection(X)
   Y_rm_na = Y
   Y_rm_na[is.na(Y_rm_na)] = 0
-  return((-1 / (n)) * (Y_rm_na - R * exp(X)) + gamma + tau * (X_projected - Theta))
+  return((-1 / (n)) * (Y_rm_na - Omega * exp(X)) + gamma + tau * (X_projected - Theta))
 }
 
 #' Default projection on covariate space: center by row and column.
@@ -138,19 +139,19 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   Y = as.matrix(Y)
   m1 = nrow(Y)
   m2 = ncol(Y)
-  R = 1-1*is.na(Y)
+  Omega = 1-1*is.na(Y)
   n = sum(!is.na(Y))
   if(is.null(X_init)){
     X = matrix(0, m1, m2)
-    X[which(R > 0)] = log(Y[which(R > 0)] + 1e-5)
-    X[which(R <= 0)] = mean(X[which(R > 0)])
+    X[which(Omega > 0)] = log(Y[which(Omega > 0)] + 1e-5)
+    X[which(Omega <= 0)] = mean(X[which(Omega > 0)])
   } else{
     X = X_init
   }
   X_projected = projection(X)
   if(is.null(lambda)){
     if(cov == FALSE){
-      lambda = lambda_QUT(Y, projection = projection, quantile = 0.95, n = 1e3)
+      lambda = lambda_QUT(Y, quantile = 0.95, n = 1e3)
     } else{
       lambda = lambda_QUT_covariates(Y, projection = projection, quantile = 0.95, n = 1e3)
     }
@@ -172,18 +173,22 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
     beta = matrix(rep(beta, m1), nrow = m1, ncol = m2, byrow = TRUE)
     Y_na_rm = Y
     Y_na_rm[is.na(Y_na_rm)] = 0
-    Theta = (1 / (n)) * (Y_na_rm - R * exp(mu + alpha + beta))
+    Theta = (1 / (n)) * (Y_na_rm - Omega * exp(mu + alpha + beta))
     Theta=projection(Theta)
   } else{
     Theta=Theta_init
   }
   error = 1
   d = svd(Theta)$d
-  objective = list(-(1 / (n)) * sum(Y_na_rm * X - R * exp(X)) + lambda * sum(d) + tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(matrix(X_projected - Theta), type = "F")^2)
+  objective = list(-(1 / (n)) * sum(Y_na_rm * X - Omega * exp(X)) + lambda * sum(d)
+                   + tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(matrix(X_projected - Theta),
+                                                                               type = "F")^2)
   count = 1
   while(error > epsilon && count < max_it){
     X_tmp = X
-    X =  optim(par = X_tmp, method="L-BFGS-B", fn = objective_function, gr = gradient, Y, projection, Theta, gamma, tau, lower = matrix(lower, nrow = m1, ncol = m2), upper = matrix(upper, nrow = m1, ncol = m2), control = list(pgtol = tol,maxit = 1e5))$par
+    X =  optim(par = X_tmp, method="L-BFGS-B", fn = objective_function, gr = gradient,
+               Y, projection, Theta, gamma, tau, lower = matrix(lower, nrow = m1, ncol = m2),
+               upper = matrix(upper, nrow = m1, ncol = m2), control = list(pgtol = tol,maxit = 1e5))$par
     X_projected = projection(X)
     Theta_tmp = Theta
     X_projected_svd = svd(X_projected + (1 / tau) * gamma)
@@ -198,7 +203,8 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
     gamma = gamma + tau * (X_projected - Theta)
     d = svd(Theta)$d
     count = count + 1
-    objective[[count]] = -(1 / (m1 * m2)) * sum(Y_na_rm * X - R * exp(X)) + lambda * sum(d) + tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(X_projected - Theta, type = "F")^2
+    objective[[count]] = -(1 / (m1 * m2)) * sum(Y_na_rm * X - Omega * exp(X)) + lambda * sum(d) +
+      tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(X_projected - Theta, type = "F")^2
     residual_1 = X_projected - Theta
     residual_2 = Theta_tmp - Theta
     residual_1 = norm(residual_1, type="F")

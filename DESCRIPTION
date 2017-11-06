@@ -15,7 +15,9 @@ Imports: psych,
          NLRoot,
          FactoMineR,
          glmnet,
-         lars
+         pdist,
+         lars,
+         ade4
 Suggests: 
     knitr,
     rmarkdown,

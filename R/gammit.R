@@ -39,3 +39,41 @@ gammit = function(Y, R = NULL, C = NULL, lambda = NULL, projection = default_pro
 
 
 }
+
+gammit_class <- function(X = NULL, R = NULL, C = NULL, projection = default_projection, Theta = NULL,
+                         alpha = NULL, mu = NULL)
+{
+
+  if(!is.null(Theta))
+  {
+    udv=svd(Theta)
+    u = udv$u
+    v = udv$v
+    d = udv$d
+    u = u %*% diag(sqrt(d))
+    v = v %*% diag(sqrt(d))
+
+    cor_row_dim1 = data.frame(sapply(1:ncol(R), function(i) cor(as.numeric(R[, i]), u[, 1])))
+    cor_row_dim2 = data.frame(sapply(1:ncol(R), function(i) cor(as.numeric(R[, i]), u[, 2])))
+    cor_env_covariates = cbind.data.frame(cor_env_dim1, cor_env_dim2)
+    names(cor_env_covariates) = c("u1","u2")
+    rownames(cor_env_covariates) = colnames(aravo$R)[c(1,2,3,4,6)]
+    coord_covariates = rbind.data.frame(species_coord_covariates, env_coord_no_covariates)
+
+
+  } else {
+    cor_row = NULL
+    cor_col = NULL
+  }
+
+
+  res <- list(
+    X = X,
+    alpha = alpha,
+    Theta = Theta
+  )
+
+  ## Set the name for the class
+  class(me) <- append(class(me),"NorthAmerican")
+  return(me)
+}
