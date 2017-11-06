@@ -24,7 +24,7 @@ lambda_QUT_covariates = function(Y, projection = default_projection, q = 0.95, n
     Y_simul[Y_simul <= 0] = 1e-6
     null_estimator_simul = admm_algorithm(Y_simul, cov = TRUE, lambda=1e5, projection = projection)
     X_0_simul = null_estimator_simul$X - null_estimator_simul$Theta
-    lambdas[i] = (1 / (m1 * m2)) * propack.svd(projection(Y_simul - exp(X_0_simul)), neig = 1, opts = list(maxiter = 1e5))$d
+    lambdas[i] = (1 / (m1 * m2)) * svd::propack.svd(projection(Y_simul - exp(X_0_simul)), neig = 1, opts = list(maxiter = 1e5))$d
   }
   Sys.time() - proc
   return(quantile(lambdas, q)[[1]])
