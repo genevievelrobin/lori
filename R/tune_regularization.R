@@ -81,7 +81,6 @@ lambda_QUT = function(Y, q = 0.95, n = 1e4){
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
 #' lambda = lambda_QUT(Y)
-
 lambda_cv = function(Y, cov = FALSE, projection = default_projection, gamma_init = NULL, X_init = NULL,
                      Theta_init = NULL, tau = 0.1, epsilon = 1e-6,
                      tol = 1e-12, max_it = 5 * 1e5, upper = -log(1e-6), lower = log(1e-6), K = 10)
@@ -111,17 +110,14 @@ lambda_cv = function(Y, cov = FALSE, projection = default_projection, gamma_init
     Y_sample = Y
     Y_sample[R == 0] = NA
     estimator_list = list()
-    estimator_list[[1]] = admm_algorithm(Y_sample, cov = cov, lambda = NULL, projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)$X
+    estimator_list[[1]] = admm_algorithm(Y_sample, cov = cov, lambda = NULL, projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)
     indices_to_predict = 1*(!is.na(Y)) - 1*(!is.na(Y_sample))
-    error[1] = error[1] + norm(exp(estimator_list[[1]]$X)[indices_to_predict > 0]-Y[indices_to_predict], type="2")
-    for(k in 2:(length(lambda.grid) - 1)){
-      estimator_list[[k]] = admm_algorithm(Y_sample, cov = cov, lambda = lambda.grid[k], projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)$X
+    error[1] = error[1] + norm(exp(estimator_list[[1]]$X)[indices_to_predict > 0]-Y[indices_to_predict>0], type="2")
+    for(k in 2:(length(lambda_grid) - 1)){
+      estimator_list[[k]] = admm_algorithm(Y_sample, cov = cov, lambda = lambda_grid[k], projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)
       error[k] = error[k] + norm(exp(estimator_list[[k]]$X)[indices_to_predict > 0] - Y[indices_to_predict > 0], type="2")
     }
-
+    
   }
-  return(lambda.grid[which(error == min(error))])
+  return(lambda_grid[which(error == min(error))])
 }
-
-
-
