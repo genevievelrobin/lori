@@ -16,8 +16,15 @@
 #' tau = 1e-3
 #' objective_function(X, Y,  projection = default_projection, Theta, gamma, tau)
 objective_function = function(X, Y,  projection = default_projection, Theta, gamma, tau) {
-  X_projected = proj(X_bar)
-  return(-1 / (sum(1-1*is.na(Y))) * sum(Y * X_bar - exp(X_bar), na.rm = T) + psych::tr(t(gamma) %*% X_projected) +
+  m1 = nrow(Y)
+  m2 = ncol(Y)
+  Omega = 1-1*is.na(Y)
+  n = sum(Omega > 0)
+  X = matrix(X, nrow = m1, ncol = m2)
+  X_projected = projection(X)
+  Y_rm_na = Y
+  Y_rm_na[is.na(Y_rm_na)] = 0
+  return(-1 / (n) * sum(Y_rm_na * X - Omega * exp(X)) + psych::tr(t(gamma) %*% X_projected) +
            (tau / 2) * norm(X_projected - Theta, type="F")^2)
 }
 
@@ -174,7 +181,11 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   d = svd(Theta)$d
   objective = list(-(1 / (n)) * sum(Y_na_rm * X - Omega * exp(X)) + lambda * sum(d)
                    + psych::tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(matrix(X_projected - Theta),
+<<<<<<< HEAD
                                                                                       type = "F")^2)
+=======
+                                                                               type = "F")^2)
+>>>>>>> f4a7af271d34ff5af2d23d008508744545b0f300
   count = 1
   while(error > epsilon && count < max_it){
     X_tmp = X
