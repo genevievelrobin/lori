@@ -6,7 +6,6 @@ Authors@R: person("Genevieve", "Robin", email = "genevieve.robin@polytechnique.e
   role = c("aut", "cre"))
 Maintainer: Genevi\`{e}ve Robin <genevieve.robin@polytechnique.edu>
 Description: Estimation and visualization of contingency tables
-
 Encoding: UTF-8
 LazyData: true
 Imports: psych,
