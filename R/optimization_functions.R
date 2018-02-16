@@ -180,12 +180,7 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   error = 1
   d = svd(Theta)$d
   objective = list(-(1 / (n)) * sum(Y_na_rm * X - Omega * exp(X)) + lambda * sum(d)
-                   + psych::tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(matrix(X_projected - Theta),
-<<<<<<< HEAD
-                                                                                      type = "F")^2)
-=======
-                                                                               type = "F")^2)
->>>>>>> f4a7af271d34ff5af2d23d008508744545b0f300
+                   + psych::tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(matrix(X_projected - Theta), type = "F")^2)
   count = 1
   while(error > epsilon && count < max_it){
     X_tmp = X
