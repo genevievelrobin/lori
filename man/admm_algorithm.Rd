@@ -2,7 +2,7 @@
 % Please edit documentation in R/optimization_functions.R
 \name{admm_algorithm}
 \alias{admm_algorithm}
-\title{Performs the Alternating Descent Method of Multipliers (ADMM) algorithm to estimate the GAMMIT parameters.}
+\title{Performs the Alternating Descent Method of Multipliers (ADMM) algorithm to estimate the LoRI parameters.}
 \usage{
 admm_algorithm(Y, cov = FALSE, lambda = NULL,
   projection = default_projection, gamma_init = NULL, X_init = NULL,
@@ -40,7 +40,7 @@ admm_algorithm(Y, cov = FALSE, lambda = NULL,
 The value of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma}) taken at \code{X}.
 }
 \description{
-Performs the Alternating Descent Method of Multipliers (ADMM) algorithm to estimate the GAMMIT parameters.
+Performs the Alternating Descent Method of Multipliers (ADMM) algorithm to estimate the LoRI parameters.
 }
 \examples{
 X = matrix(rnorm(rep(0, 15)), 5)

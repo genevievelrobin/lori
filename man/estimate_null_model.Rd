@@ -2,7 +2,7 @@
 % Please edit documentation in R/optimization_functions.R
 \name{estimate_null_model}
 \alias{estimate_null_model}
-\title{Estimates the GAMMIT model under the constraint Theta = 0.}
+\title{Estimates the LoRI model under the constraint Theta = 0.}
 \usage{
 estimate_null_model(Y)
 }
@@ -13,7 +13,7 @@ estimate_null_model(Y)
 the null estimator under constraint Theta = 0
 }
 \description{
-Estimates the GAMMIT model under the constraint Theta = 0.
+Estimates the LoRI model under the constraint Theta = 0.
 }
 \examples{
 X = matrix(rnorm(rep(0, 15)), 5)

@@ -4,7 +4,7 @@
 #' @param projection A projection function on the space orthogonal to covariates. By default centers by rows and columns
 #' @param quantile A number between \code{0} and \code{1}. The quantile of the distribution of $\lambda_{\text{QUT}}$ to take.
 #' @param n An integer. The number of parametric bootstrap samples to draw.
-#' @return the value of $\lambda_{\text{QUT}}$ to use in gammit.
+#' @return the value of $\lambda_{\text{QUT}}$ to use in LoRI.
 #' @examples
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
@@ -14,15 +14,16 @@ lambda_QUT_covariates = function(Y, projection = default_projection, q = 0.95, n
   m2 = ncol(Y)
   W = Y
   W[W < 1] = 1e-6
-  null_estimator = admm_algorithm(W, lambda = 1e5, projection = projection)
+  null_estimator = admm_algorithm(W, cov = T, lambda = 1e5, projection = projection, max_it = 1e4)
   X_0 = null_estimator$X - null_estimator$Theta
   lambdas = rep(0, n)
   proc = Sys.time()
   for(i in 1:n)
   {
+    print(i)
     Y_simul = matrix(rpois(n = m1 * m2, exp(c(X_0))), nrow = m1)
     Y_simul[Y_simul <= 0] = 1e-6
-    null_estimator_simul = admm_algorithm(Y_simul, cov = TRUE, lambda=1e5, projection = projection)
+    null_estimator_simul = admm_algorithm(Y_simul, cov = TRUE, lambda=1e5, projection = projection, max_it = 1e4)
     X_0_simul = null_estimator_simul$X - null_estimator_simul$Theta
     lambdas[i] = (1 / (m1 * m2)) * propack.svd(projection(Y_simul - exp(X_0_simul)), neig = 1, opts = list(maxiter = 1e5))$d
   }
@@ -35,7 +36,7 @@ lambda_QUT_covariates = function(Y, projection = default_projection, q = 0.95, n
 #' @param Y A matrix of counts (contingency table).
 #' @param quantile A number between \code{0} and \code{1}. The quantile of the distribution of $\lambda_{\text{QUT}}$ to take.
 #' @param n An integer. The number of parametric bootstrap samples to draw.
-#' @return the value of $\lambda_{\text{QUT}}$ to use in gammit.
+#' @return the value of $\lambda_{\text{QUT}}$ to use in LoRI.
 #' @examples
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
@@ -54,7 +55,7 @@ lambda_QUT = function(Y, q = 0.95, n = 1e4){
     Y_simul = matrix(rpois(n = m1 * m2, exp(c(X_0))), nrow = m1)
     Y_simul[Y_simul <= 0] = 1e-6
     null_estimator_simul = estimate_null_model(Y_simul)
-    lambdas[i] = (1 / (m1 * m2)) * propack.svd(default_projection(Y_simul - exp(null_estimator_simul$X)),
+    lambdas[i] = (1 / (m1 * m2)) * svd::propack.svd(default_projection(Y_simul - exp(null_estimator_simul$X)),
                                              neig = 1, opts = list(maxiter = 1e5))$d
   }
   return(quantile(lambdas, q)[[1]])
@@ -76,7 +77,7 @@ lambda_QUT = function(Y, q = 0.95, n = 1e4){
 #' @param upper upper bound on the values of \code{X}.
 #' @param lower lower bound on the values of \code{X}.
 #' @param K An integer. The number of folds of the cross-validation.
-#' @return the value of $\lambda_{\text{QUT}}$ to use in gammit.
+#' @return the value of $\lambda_{\text{QUT}}$ to use in LoRI.
 #' @examples
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
@@ -110,7 +111,7 @@ lambda_cv = function(Y, cov = FALSE, projection = default_projection, gamma_init
     Y_sample = Y
     Y_sample[R == 0] = NA
     estimator_list = list()
-    estimator_list[[1]] = admm_algorithm(Y_sample, lambda = NULL, projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)$X
+    estimator_list[[1]] = admm_algorithm(Y_sample, cov = FALSE, lambda = NULL, projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)$X
     indices_to_predict = 1*(!is.na(Y)) - 1*(!is.na(Y_sample))
     error[1] = error[1] + norm(exp(estimator_list[[1]]$X)[indices_to_predict > 0]-Y[indices_to_predict], type="2")
     for(k in 2:(length(lambda.grid) - 1)){
@@ -121,5 +122,6 @@ lambda_cv = function(Y, cov = FALSE, projection = default_projection, gamma_init
   }
   return(lambda.grid[which(error == min(error))])
 }
+
 
 

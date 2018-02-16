@@ -1,3 +1,4 @@
+
 #' Computes the value of the objective function in X to be optimized at each iteration of ADMM.
 #'
 #' @param X A matrix of Poisson parameters.
@@ -15,19 +16,12 @@
 #' tau = 1e-3
 #' objective_function(X, Y,  projection = default_projection, Theta, gamma, tau)
 objective_function = function(X, Y,  projection = default_projection, Theta, gamma, tau) {
-  m1 = nrow(Y)
-  m2 = ncol(Y)
-  Omega = 1-1*is.na(Y)
-  n = sum(Omega > 0)
-  X = matrix(X, nrow = m1, ncol = m2)
-  X_projected = projection(X)
-  Y_rm_na = Y
-  Y_rm_na[is.na(Y_rm_na)] = 0
-  return(-1 / (n) * sum(Y_rm_na * X - Omega * exp(X)) + tr(t(gamma) %*% X_projected) +
+  X_projected = proj(X_bar)
+  return(-1 / (sum(1-1*is.na(Y))) * sum(Y * X_bar - exp(X_bar), na.rm = T) + psych::tr(t(gamma) %*% X_projected) +
            (tau / 2) * norm(X_projected - Theta, type="F")^2)
 }
 
-#' Estimates the GAMMIT model under the constraint Theta = 0.
+#' Estimates the LoRI model under the constraint Theta = 0.
 #'
 #' @param Y A matrix of counts (contingency table).
 #' @return the null estimator under constraint Theta = 0
@@ -36,18 +30,16 @@ objective_function = function(X, Y,  projection = default_projection, Theta, gam
 #' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
 #' res = estimate_null_model(Y)
 estimate_null_model = function(Y){
-  Y[Y == 0] = 1e-6
   m1 = nrow(Y)
   m2 = ncol(Y)
-  Omega = 1-1*is.na(Y)
-  mu = (1 / m1) * sum(log(rowSums(Y, na.rm = TRUE))) + (1 / m2) * sum(log(colSums(Y, na.rm = TRUE))) -
-    log(sum(Y, na.rm = TRUE))
-  alpha = log(rowSums(Y, na.rm = TRUE)) - (1 / m1) * sum(log(rowSums(Y, na.rm = TRUE)))
-  beta = log(colSums(Y, na.rm = TRUE)) - (1 / m2) * sum(log(colSums(Y, na.rm = TRUE)))
-  mu_matrix = matrix(mu, nrow = m1, ncol = m2)
-  alpha_matrix = matrix(rep(alpha, m2),nrow = m1, ncol = m2)
-  beta_matrix = matrix(rep(beta, m1), nrow = m1, ncol = m2, byrow = TRUE)
-  return(structure(list(mu = mu, alpha = alpha, beta = beta, X = mu_matrix + alpha_matrix + beta_matrix)))
+  a <- log(rowSums(Y, na.rm = TRUE)+1e-6)
+  b <- log(colSums(Y, na.rm = TRUE)+1e-6)
+  alpha = a - mean(a)
+  beta = b - mean(b)
+  mu = mean(a) + mean(b) - log(sum(Y, na.rm = TRUE)+1e-6)
+  X = matrix(mu, nrow = m1, ncol = m2)  + matrix(rep(alpha, m2),nrow = m1, ncol = m2)
+  + matrix(rep(beta, m1), nrow = m1, ncol = m2, byrow = TRUE)
+  return(structure(list(mu = mu, alpha = alpha, beta = beta, X = X)))
 }
 
 #' Computes deviance of Poisson parameter matrix with count data matrix.
@@ -111,7 +103,7 @@ default_projection = function(M){
   return(M_projected)
 }
 
-#' Performs the Alternating Descent Method of Multipliers (ADMM) algorithm to estimate the GAMMIT parameters.
+#' Performs the Alternating Descent Method of Multipliers (ADMM) algorithm to estimate the LoRI parameters.
 #'
 #' @param Y A matrix of counts (same size as X).
 #' @param cov A boolean \code{TRUE} if covariate matrices are provided, \code{FALSE} otherwise. Default is \code{FALSE}.
@@ -151,11 +143,11 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   X_projected = projection(X)
   if(is.null(lambda)){
     if(cov == FALSE){
-      lambda = lambda_QUT(Y, quantile = 0.95, n = 1e3)
+      lambda = lambda_QUT(Y, q = 0.95, n = 1e3)
     } else{
-      lambda = lambda_QUT_covariates(Y, projection = projection, quantile = 0.95, n = 1e3)
+      lambda = lambda_QUT_covariates(Y, projection = projection, q = 0.95, n = 1e3)
     }
-
+    
   }
   if(is.null(gamma_init)){
     gamma = matrix(0, nrow=m1, ncol=m2)
@@ -181,8 +173,8 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   error = 1
   d = svd(Theta)$d
   objective = list(-(1 / (n)) * sum(Y_na_rm * X - Omega * exp(X)) + lambda * sum(d)
-                   + tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(matrix(X_projected - Theta),
-                                                                               type = "F")^2)
+                   + psych::tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(matrix(X_projected - Theta),
+                                                                                      type = "F")^2)
   count = 1
   while(error > epsilon && count < max_it){
     X_tmp = X
@@ -204,7 +196,7 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
     d = svd(Theta)$d
     count = count + 1
     objective[[count]] = -(1 / (m1 * m2)) * sum(Y_na_rm * X - Omega * exp(X)) + lambda * sum(d) +
-      tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(X_projected - Theta, type = "F")^2
+      psych::tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(X_projected - Theta, type = "F")^2
     residual_1 = X_projected - Theta
     residual_2 = Theta_tmp - Theta
     residual_1 = norm(residual_1, type="F")
@@ -229,8 +221,8 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   alpha = rowMeans(X - mu)
   beta = colMeans(X - mu)
   rank = sum(svd(Theta)$d > 5e-06)
-  deviance = deviance(Y, X)
   return(structure(list(X = X, Theta = Theta, gamma = gamma, mu = mu, alpha = alpha, beta = beta,
-                        objective = unlist(objective), deviance = deviance,
+                        objective = unlist(objective),
                         iter = count, rank = rank, convergence = count < max_it)))
 }
+

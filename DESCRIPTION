@@ -1,13 +1,12 @@
-Package: gammit
+Package: lori
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Low-rank Interaction Contingency Tables (Title Case)
 Version: 0.1.0
 Authors@R: person("Genevieve", "Robin", email = "genevieve.robin@polytechnique.edu",
   role = c("aut", "cre"))
-Maintainer: The package maintainer <genevieve.robin@polytechnique.edu>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Maintainer: Genevi\`{e}ve Robin <genevieve.robin@polytechnique.edu>
+Description: Estimation and visualization of contingency tables
+
 Encoding: UTF-8
 LazyData: true
 Imports: psych,
@@ -17,7 +16,8 @@ Imports: psych,
          glmnet,
          pdist,
          lars,
-         ade4
+         ade4,
+	 lattice
 Suggests: 
     knitr,
     rmarkdown,
