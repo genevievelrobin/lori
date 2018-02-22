@@ -17,17 +17,15 @@ lambda_QUT_covariates = function(Y, projection = default_projection, q = 0.95, n
   null_estimator = admm_algorithm(W, cov = T, lambda = 1e5, projection = projection, max_it = 1e4)
   X_0 = null_estimator$X - null_estimator$Theta
   lambdas = rep(0, n)
-  proc = Sys.time()
   for(i in 1:n)
   {
-    print(i)
+    if(i==1) print("computing empirical distribution...")
     Y_simul = matrix(rpois(n = m1 * m2, exp(c(X_0))), nrow = m1)
     Y_simul[Y_simul <= 0] = 1e-6
     null_estimator_simul = admm_algorithm(Y_simul, cov = TRUE, lambda=1e5, projection = projection, max_it = 1e4)
     X_0_simul = null_estimator_simul$X - null_estimator_simul$Theta
     lambdas[i] = (1 / (m1 * m2)) * svd::propack.svd(projection(Y_simul - exp(X_0_simul)), neig = 1, opts = list(maxiter = 1e5))$d
   }
-  Sys.time() - proc
   return(quantile(lambdas, q)[[1]])
 }
 
@@ -52,6 +50,8 @@ lambda_QUT = function(Y, q = 0.95, n = 1e4){
   lambdas = rep(0,n)
   for(i in 1:n)
   {
+    if(i==1) print("computing empirical distribution...")
+    if(i %% 20 == 0) print(paste("iteration", i,"out of", n))
     Y_simul = matrix(rpois(n = m1 * m2, exp(c(X_0))), nrow = m1)
     Y_simul[Y_simul <= 0] = 1e-6
     null_estimator_simul = estimate_null_model(Y_simul)
@@ -118,7 +118,7 @@ lambda_cv = function(Y, cov = FALSE, projection = default_projection, gamma_init
       estimator_list[[k]] = admm_algorithm(Y_sample, cov = cov, lambda = lambda_grid[k], projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)
       error[k] = error[k] + norm(exp(estimator_list[[k]]$X)[indices_to_predict > 0] - Y[indices_to_predict > 0], type="2")
     }
-    
+
   }
   return(lambda_grid[which(error == min(error))])
 }

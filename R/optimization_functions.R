@@ -150,11 +150,11 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   X_projected = projection(X)
   if(is.null(lambda)){
     if(cov == FALSE){
-      lambda = lambda_QUT(Y, q = 0.95, n = 1e3)
+      lambda = lambda_QUT(Y, q = 0.95, n = 1e2)
     } else{
-      lambda = lambda_QUT_covariates(Y, projection = projection, q = 0.95, n = 1e3)
+      lambda = lambda_QUT_covariates(Y, projection = projection, q = 0.95, n = 1e2)
     }
-    
+
   }
   if(is.null(gamma_init)){
     gamma = matrix(0, nrow=m1, ncol=m2)
@@ -183,6 +183,7 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
                    + psych::tr(t(gamma) %*% (X_projected - Theta)) + (tau / 2) * norm(matrix(X_projected - Theta), type = "F")^2)
   count = 1
   while(error > epsilon && count < max_it){
+    if(count == 1) print("starting optimization...")
     X_tmp = X
     X =  optim(par = X_tmp, method="L-BFGS-B", fn = objective_function, gr = gradient,
                Y, projection, Theta, gamma, tau, lower = matrix(lower, nrow = m1, ncol = m2),
@@ -222,13 +223,15 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
       print(paste("objective step:", error_2))
     }
   }
+  if(count < max_it) print("model converged !")
+  if(count == max_it) print("model did not converge, stopped after", max_it, "iterations.")
   X = X - projection(X) + Theta
   mu = mean(X)
   alpha = rowMeans(X - mu)
   beta = colMeans(X - mu)
   rank = sum(svd(Theta)$d > 5e-06)
   return(structure(list(X = X, Theta = Theta, gamma = gamma, mu = mu, alpha = alpha, beta = beta,
-                        objective = unlist(objective),
+                        objective = unlist(objective), d = d,
                         iter = count, rank = rank, convergence = count < max_it)))
 }
 
