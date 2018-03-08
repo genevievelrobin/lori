@@ -16,7 +16,9 @@ the null estimator under constraint Theta = 0
 Estimates the LoRI model under the constraint Theta = 0.
 }
 \examples{
+\dontshow{
 X = matrix(rnorm(rep(0, 15)), 5)
-Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-res = estimate_null_model(Y)
+Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+null_model <- estimate_null_model(Y)
+}
 }

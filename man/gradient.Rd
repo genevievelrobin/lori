@@ -26,10 +26,12 @@ The gradient of the augmented Lagrangian (with fixed \code{Theta} and \code{gamm
 Computes the gradient of the objective function in X for gradient descent step in ADMM.
 }
 \examples{
+\dontshow{
 X = matrix(rnorm(rep(0, 15)), 5)
-Theta = default_projection(matrix(rnorm(rep(0, 15)), 5))
-Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-gamma = matrix(rnorm(rep(0, 15)), 5)
-tau = 1e-3
-gradient(X, Y,  projection = default_projection, Theta, gamma, tau)
+Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+Theta <- default_projection(X)
+gamma <- matrix(0, nrow(X), ncol(X))
+tau <- 0.1
+grad_X <- gradient(X, Y, default_projection, Theta, gamma, tau)
+}
 }

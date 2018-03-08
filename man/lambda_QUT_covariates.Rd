@@ -2,22 +2,33 @@
 % Please edit documentation in R/tune_regularization.R
 \name{lambda_QUT_covariates}
 \alias{lambda_QUT_covariates}
-\title{Computes the threshold $\lambda_{\text{QUT}}$.}
+\title{Computes the threshold $lambda_{QUT}$ with parametric bootstrap when covariates are available.
+If you don't have any covariates, use the function \code{lambda_QUT} which will be significantly faster.}
 \usage{
-lambda_QUT_covariates(Y, projection = default_projection, quantile = 0.95,
-  n = 10000)
+lambda_QUT_covariates(Y, projection = default_projection, q = 0.95,
+  n = 100)
 }
 \arguments{
 \item{Y}{A matrix of counts (contingency table).}
+
+\item{projection}{A projection function on the space orthogonal to covariates. By default centers by rows and columns}
+
+\item{q}{A number between \code{0} and \code{1}. The quantile of the distribution of $lambda_{QUT}$ to take.}
+
+\item{n}{An integer. The number of parametric bootstrap samples to draw.}
 }
 \value{
-the null estimator under constraint Theta = 0
+the value of $lambda_{QUT}$ to use in LoRI.
 }
 \description{
-Computes the threshold $\lambda_{\text{QUT}}$.
+Computes the threshold $lambda_{QUT}$ with parametric bootstrap when covariates are available.
+If you don't have any covariates, use the function \code{lambda_QUT} which will be significantly faster.
 }
 \examples{
 X = matrix(rnorm(rep(0, 15)), 5)
 Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-res = estimate_null_model(Y)
+lambda = lambda_QUT_covariates(Y, n=5)
+\donttest{
+     lambda = lambda_QUT_covariates(Y, n=100)
+}
 }

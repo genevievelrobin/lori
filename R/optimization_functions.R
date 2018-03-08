@@ -9,12 +9,14 @@
 #' @param tau A number (augmented Lagrangian parameter)
 #' @return The value of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma}) taken at \code{X}.
 #' @examples
+#' \dontshow{
 #' X = matrix(rnorm(rep(0, 15)), 5)
-#' Theta = default_projection(matrix(rnorm(rep(0, 15)), 5))
-#' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-#' gamma = matrix(rnorm(rep(0, 15)), 5)
-#' tau = 1e-3
-#' objective_function(X, Y,  projection = default_projection, Theta, gamma, tau)
+#' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+#' Theta <- default_projection(X)
+#' gamma <- matrix(0, nrow(X), ncol(X))
+#' tau <- 0.1
+#' obj_X <- objective_function(X, Y, default_projection, Theta, gamma, tau)
+#' }
 objective_function = function(X, Y,  projection = default_projection, Theta, gamma, tau) {
   m1 = nrow(Y)
   m2 = ncol(Y)
@@ -33,9 +35,11 @@ objective_function = function(X, Y,  projection = default_projection, Theta, gam
 #' @param Y A matrix of counts (contingency table).
 #' @return the null estimator under constraint Theta = 0
 #' @examples
+#' \dontshow{
 #' X = matrix(rnorm(rep(0, 15)), 5)
-#' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-#' res = estimate_null_model(Y)
+#' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+#' null_model <- estimate_null_model(Y)
+#' }
 estimate_null_model = function(Y){
   m1 = nrow(Y)
   m2 = ncol(Y)
@@ -49,23 +53,6 @@ estimate_null_model = function(Y){
   return(structure(list(mu = mu, alpha = alpha, beta = beta, X = X)))
 }
 
-#' Computes deviance of Poisson parameter matrix with count data matrix.
-#'
-#' @param X A Poisson parameter matrix.
-#' @param Y A matrix of counts (contingency table, same size as X).
-#' @return the deviance between \code{X} and \code{Y}
-#' @examples
-#' X = matrix(rnorm(rep(0, 15)), 5)
-#' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-#' deviance(Y, X)
-deviance = function(Y, X){
-  y = as.matrix(Y)
-  x = as.matrix(X)
-  m = y * log(y / exp(x))
-  m[is.na(m)] = 0
-  2 * sum(m) + 2 * sum(exp(x) - y, na.rm = TRUE)
-}
-
 
 #' Computes the gradient of the objective function in X for gradient descent step in ADMM.
 #'
@@ -77,13 +64,14 @@ deviance = function(Y, X){
 #' @param tau A number (augmented Lagrangian parameter)
 #' @return The gradient of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma}) taken at \code{X}.
 #' @examples
+#' \dontshow{
 #' X = matrix(rnorm(rep(0, 15)), 5)
-#' Theta = default_projection(matrix(rnorm(rep(0, 15)), 5))
-#' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-#' gamma = matrix(rnorm(rep(0, 15)), 5)
-#' tau = 1e-3
-#' gradient(X, Y,  projection = default_projection, Theta, gamma, tau)
-
+#' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+#' Theta <- default_projection(X)
+#' gamma <- matrix(0, nrow(X), ncol(X))
+#' tau <- 0.1
+#' grad_X <- gradient(X, Y, default_projection, Theta, gamma, tau)
+#' }
 gradient = function(X, Y, projection = default_projection, Theta, gamma, tau) {
   m1 = nrow(Y)
   m2 = ncol(Y)
@@ -98,12 +86,13 @@ gradient = function(X, Y, projection = default_projection, Theta, gamma, tau) {
 
 #' Default projection on covariate space: center by row and column.
 #'
-#' @param X A matrix.
-#' @return The projection of X
+#' @param M A matrix.
+#' @return M centered by row and column
 #' @examples
+#' \dontshow{
 #' X = matrix(rnorm(rep(0, 15)), 5)
-#' default_projection(X)
-
+#' proj_X <- default_projection(X)
+#' }
 default_projection = function(M){
   M_projected = as.matrix(sweep(M, 2, colMeans(M)))
   M_projected = as.matrix(sweep(M_projected, 1, rowMeans(M_projected)))
@@ -127,10 +116,11 @@ default_projection = function(M){
 #' @param lower lower bound on the values of \code{X}.
 #' @return The value of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma}) taken at \code{X}.
 #' @examples
+#' \dontshow{
 #' X = matrix(rnorm(rep(0, 15)), 5)
-#' Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-#' res = admm_algorithm(Y)
-
+#' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+#' res_admm <- admm_algorithm(Y)
+#' }
 admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_projection, gamma_init = NULL, X_init = NULL,
                           Theta_init = NULL, tau = 0.1, epsilon = 1e-6,
                           tol = 1e-12, max_it = 5 * 1e5, upper = -log(1e-6), lower = log(1e-6))
@@ -185,7 +175,7 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
   while(error > epsilon && count < max_it){
     if(count == 1) print("starting optimization...")
     X_tmp = X
-    X =  optim(par = X_tmp, method="L-BFGS-B", fn = objective_function, gr = gradient,
+    X =  stats::optim(par = X_tmp, method="L-BFGS-B", fn = objective_function, gr = gradient,
                Y, projection, Theta, gamma, tau, lower = matrix(lower, nrow = m1, ncol = m2),
                upper = matrix(upper, nrow = m1, ncol = m2), control = list(pgtol = tol,maxit = 1e5))$par
     X_projected = projection(X)
@@ -224,7 +214,7 @@ admm_algorithm = function(Y, cov = FALSE, lambda = NULL, projection = default_pr
     }
   }
   if(count < max_it) print("model converged !")
-  if(count == max_it) print("model did not converge, stopped after", max_it, "iterations.")
+  if(count == max_it) print(paste("model did not converge, stopped after", max_it, "iterations."))
   X = X - projection(X) + Theta
   mu = mean(X)
   alpha = rowMeans(X - mu)

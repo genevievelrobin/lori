@@ -11,7 +11,7 @@ vignette: >
 
 # The LORI model with covariates
 lori is a two-fold extension of the log-bilinear model. 
-First, it allows to incorporate general covariates. Secondly, it includes a regularization through the nuclear norm penalty of the interaction matrix. The model is described as follows.  Let $Y\in\mathbb{R}^{n\times p}$ be a contingency table modeled as Poisson variables. Let $X\in\mathbb{R}^{n\times p}$ be a parameter matrix such that for all $1\leq i\leq n$ and $1\leq j\leq p$, and denoting $\mathcal{P}(\lambda)$ the Poisson distribution of parameter $\lambda$:
+First, it allows to incorporate general covariates. Secondly, it includes a regularization through the nuclear norm penalty of the interaction matrix. The model is described as follows.  Let $Y\in\mathbb{R}^{n\times p}$ be a contingency table modeled as Poisson variables. Let $X\in\mathbb{R}^{n\times p}$ be a parameter matrix such that for all $1\leq i\leq n$ and $1\leq j\leq p$, and denoting $\mathcal{P}(l)$ the Poisson distribution of parameter $l$:
 $$Y_{ij}|X_{ij} \sim \mathcal{P}(\mathrm{e}^X_{ij}).$$
 Let $R\in\mathbb{R}^{m_1\times K_1}$ (resp. $C\in\mathbb{R}^{K_2\times m_2}$) be matrices of known row (resp. column) covariates, and $\alpha \in \mathbb{R}^{m_1\times K_2}$ (resp. $\beta \in \mathbb{R}^{K_1\times m_2}$) be unknown parameters. We model the matrix $X$ as follows:
 \begin{equation}
@@ -22,187 +22,73 @@ In ecology, the row features $R$ embed geographical information about the enviro
 $$(R\beta)_{ij} = \sum_{k=1}^{K_1}R_{ik}\beta_{kj}.$$ 
 Lastly, $\Theta$ corresponds to the interaction unexplained by the known covariates $R$ and $C$.
 We perform the estimation by maximizing a penalized Poisson negative log-likelihood and obtain the estimator
-$$(\hat \mu,\hat{\alpha},\hat{\beta},\hat{\Theta})=\text{argmin}_{\mu,\alpha,\beta,\Theta}\quad \Phi(R\mu C^{\top}+ \alpha^{\top}C^{\top},R\beta,\Theta)+\lambda\left\|{\Theta}\right\|_*,\\
-\text{subject to }\quad \alpha R = 0, \beta C = 0, R^{\top}\Theta = 0, \Theta C = 0.$$
+$$(\hat \mu,\hat{\alpha},\hat{\beta},\hat{\Theta})=\text{argmin}_{\mu,\alpha,\beta,\Theta}\quad \Phi(R\mu C^{\top}+ \alpha^{\top}C^{\top},R\beta,\Theta)+\gamma\left\|{\Theta}\right\|_*,\\
+s.t.\quad \alpha R = 0, \beta C = 0, R^{\top}\Theta = 0, \Theta C = 0.$$
 
 $$\Phi(X)=-\frac{1}{m_1m_2}\sum_{i=1}^{m_1}\sum_{j=1}^{m_2}\left( Y_{ij}X_{ij} - \exp(X_{ij})\right).$$
 # The Aravo dataset
 The Aravo dataset contains the abundances of 82 species of Alpine plants across 75 environments. Species traits and environmental variables - i.e. covariates - are also available. We use this dataset to provide code examples to use the lori package and to illustrate the advantage of using lori to regularize and incorporate covariates.
 
 ```{r load-data}
-library(psych)
-library(svd)
-library(FactoMineR)
 library(ade4)
-library(lattice)
-library(lori)
 data(aravo)
-load('../data/aravo.rda')
+library(lori)
+library(FactoMineR)
+
 
 # Reduce size of data so that code runs quicker (remove lines to perform full experiment -> 45')
-Y <- aravo$spe[1:30, 1:40]
-R <- aravo$env[1:30, ]
-C <- aravo$C[1:40, ]
+Y <- aravo$spe[1:35, 1:40]
+R <- aravo$env[1:35, ]
+C <- aravo$traits[1:40, ]
 data(aravo)
-m1 <- nrow(aravo$spe)
-m2 <- ncol(aravo$spe)
+m1 <- 35
+m2 <- 40
 
 # Code categorical variables as indicators
-R$ZoogDno <- rep(0,nrow(R))
-R$ZoogDsome <- rep(0,nrow(R))
-R$ZoogDhigh <- rep(0,nrow(R))
+R$ZoogDno <- rep(0,m1)
+R$ZoogDsome <- rep(0,m1)
+R$ZoogDhigh <- rep(0,m1)
 R$ZoogDno[R$ZoogD=="no"] <- 1
 R$ZoogDsome[R$ZoogD=="some"] <- 1
 R$ZoogDhigh[R$ZoogD=="high"] <- 1
 
-R$Form1 <- rep(0,nrow(R))
-R$Form2 <- rep(0,nrow(R))
-R$Form3 <- rep(0,nrow(R))
-R$Form4 <- rep(0,nrow(R))
-R$Form5 <- rep(0,nrow(R))
+R$Form1 <- rep(0,m1)
+R$Form2 <- rep(0,m1)
+R$Form3 <- rep(0,m1)
+R$Form4 <- rep(0,m1)
+R$Form5 <- rep(0,m1)
 R$Form1[R$Form==1] <- 1
 R$Form2[R$Form==2] <- 1
 R$Form3[R$Form==3] <- 1
 R$Form4[R$Form==4] <- 1
 R$Form5[R$Form==5] <- 1
 
-R <- R[,c(1,2,4,6:14)]
+R <- R[, c(1,2,4,6:14)]
 ```
 
 ## Compute the estimator without looking at the covariates
 ```{r qut-rc}
-l = lambda_QUT(Y)
-
-# Run algorithm with QUT without using covariates #------------------------------------------------------------------------------------
-qut_no_covariates = lori(Y, lambda = l)
-
-## Extract parameters
-mu_no_covariates = qut_no_covariates$mu
-alpha_no_covariates = qut_no_covariates$alpha
-beta_no_covariates = qut_no_covariates$beta
-rank_no_covariates = qut_no_covariates$rank
-Theta_no_covariates = qut_no_covariates$Theta
-udv=svd(Theta_no_covariates)
-u_no_covariates = udv$u
-v_no_covariates = udv$v
-d_no_covariates = udv$d
-
-# Scale with singular values oh Theta
-u_no_covariates = u_no_covariates %*% diag(sqrt(d_no_covariates))
-v_no_covariates = v_no_covariates %*% diag(sqrt(d_no_covariates))
-
-species_coord_no_covariates = data.frame(v_no_covariates)[, 1:2]
-names(species_coord_no_covariates) = c("v1","v2")
-rownames(species_coord_no_covariates) = colnames(aravo$table)
-species_coord_no_covariates$name = rownames(species_coord_no_covariates)
-species_coord_no_covariates$color = "species"
-
-env_coord_no_covariates = data.frame(u_no_covariates)[,1:2]
-names(env_coord_no_covariates) = c("v1","v2")
-rownames(env_coord_no_covariates) = rownames(aravo$table)
-env_coord_no_covariates$name = "o"
-env_coord_no_covariates$color ="environments"
-
-coord_no_covariates = rbind.data.frame(species_coord_no_covariates, env_coord_no_covariates)
-
+# Run LORI algorithm without using covariates 
+qut_no_covariates = lori(Y)
 ```
 
 ## Draw correlation and scatter plots
 ```{r plots-qut-rc}
 
-# Plot correlation circles for aravo.QUT.RC ------------------------------------------------------------
-
-distance_no_covariates = as.matrix(pdist(u_no_covariates, v_no_covariates))
-rownames(distance_no_covariates) = rownames(aravo$table)
-colnames(distance_no_covariates) = colnames(aravo$table)
-which(distance_no_covariates == min(distance_no_covariates), arr.ind = TRUE)
-idx_no_covariates = sort(distance_no_covariates, index.return = TRUE)$ix[1:20]
-idx_no_covariates = t(do.call(rbind,lapply(idx_no_covariates, function(i) which(distance_no_covariates == distance_no_covariates[i], arr.ind = TRUE))))
-env_coord_no_covariates = env_coord_no_covariates[unique(idx_no_covariates[1, ]), ]
-env_coord_no_covariates$name = rownames(env_coord_no_covariates)
-species_coord_no_covariates = species_coord_no_covariates[unique(idx_no_covariates[2, ]), ]
-species_coord_no_covariates$name = rownames(species_coord_no_covariates)
-
-
-don = cbind.data.frame(aravo$table, aravo$R)
-quanti_var_idx = c(1,2,3,4,6)+ncol(aravo$table)
-env_traits = aravo$R[, c(1,2,3,4,6)]
-cor_env_dim1 = data.frame(sapply(1:5, function(i) cor(as.numeric(env_traits[, i]), u_no_covariates[, 1])))
-cor_env_dim2 = data.frame(sapply(1:5, function(i) cor(as.numeric(env_traits[, i]), u_no_covariates[, 2])))
-cor_env_no_covariates = cbind.data.frame(cor_env_dim1, cor_env_dim2)
-names(cor_env_no_covariates) = c("u1","u2")
-rownames(cor_env_no_covariates) = colnames(aravo$R)[c(1,2,3,4,6)]
-coord_no_covariates = rbind.data.frame(species_coord_no_covariates, env_coord_no_covariates)
-don = don[unique(idx_no_covariates[1, ]), c(unique(idx_no_covariates[2, ]), quanti_var_idx)]
-quanti_sup_idx = (length(unique(idx_no_covariates[2, ])) + 1):(length(unique(idx_no_covariates[2, ])) + 
-                                                              length(quanti_var_idx))
-res_ca_env_no_covariates = CA(10 + don, quanti.sup = quanti_sup_idx, graph = FALSE)
-res_ca_env_no_covariates$row$coord[,1:2] =  u_no_covariates[unique(idx_no_covariates[1, ]), 1:2] 
-res_ca_env_no_covariates$row$inertia[1:2] = qut_no_covariates$d[1:2]
-res_ca_env_no_covariates$col$coord[,1:2] =  v_no_covariates[unique(idx_no_covariates[2,]),1:2] 
-res_ca_env_no_covariates$col$inertia[1:2] = qut_no_covariates$d[1:2]
-res_ca_env_no_covariates$quanti.sup$coord =  cor_env_no_covariates[,1:2]
-res_ca_env_no_covariates$svd$d = qut_no_covariates$d
-res_ca_env_no_covariates$svd$U = u_no_covariates
-res_ca_env_no_covariates$svd$V = v_no_covariates
-
-
-spe_traits = aravo$C
-cor_spe_dim1 = data.frame(sapply(1:ncol(aravo$C), function(i) cor(as.numeric(spe_traits[, i]), v_no_covariates[, 1])))
-cor_spe_dim2 = data.frame(sapply(1:ncol(aravo$C), function(i) cor(as.numeric(spe_traits[, i]), v_no_covariates[, 2])))
-cor_spe_no_covariates = cbind.data.frame(cor_spe_dim1, cor_spe_dim2)
-names(cor_spe_no_covariates)=c("v1","v2")
-rownames(cor_spe_no_covariates) = colnames(aravo$C)
-dondon = cbind.data.frame(t(aravo$table), aravo$C)
-quanti_var_idx = 1:4+ncol(t(aravo$table))
-quanti_sup_idx = length(c(unique(idx_no_covariates[1, ]))) + 1:4
-res_ca_spe_no_covariates = CA(10 + dondon[unique(idx_no_covariates[2, ]), c(unique(idx_no_covariates[1, ]), quanti_var_idx)], quanti.sup = quanti_sup_idx, graph=FALSE)
-res_ca_spe_no_covariates$row$coord[, 1:2] =  v_no_covariates[unique(idx_no_covariates[2,]),1:2] 
-res_ca_spe_no_covariates$row$inertia[1:2] = qut_no_covariates$d[1:2]
-res_ca_spe_no_covariates$col$coord[, 1:2] =  u_no_covariates[unique(idx_no_covariates[1,]),1:2] 
-res_ca_spe_no_covariates$col$inertia[1:2] = qut_no_covariates$d[1:2]
-res_ca_spe_no_covariates$quanti.sup$coord =  cor_spe_no_covariates[c(1,3,6,7),1:2]
-res_ca_spe_no_covariates$svd$d = qut_no_covariates$d
-res_ca_spe_no_covariates$svd$U = u_no_covariates
-res_ca_spe_no_covariates$svd$V = v_no_covariates
-
-plot.CA(res_ca_env_no_covariates, choix="quanti.sup", title="correlation of environmental traits with principal interaction directions")
-plot.CA(res_ca_spe_no_covariates, choix="quanti.sup", title="correlation of species traits with principal interaction directions")
-
-don_row = u_no_covariates[, 1:2]
-rownames(don_row) = row.names(aravo$table)
-don_col = v_no_covariates[, 1:2]
-rownames(don_col) = names(aravo$table)
-#don_col = don_col[c(1,2,3,5,7,9),]
-#don_row = don_row[c(1,2,3,6,7,8),]
-
-{plot(don_row, pch = 1, col = "blue", cex = 2, ylim=c(-2,2), xlim = c(-2,2), xlab = "dim 1", ylab ="dim 2")
-text(don_row[,1], don_row[,2], labels = rownames(don_row), cex= 1.2,  srt=30, col="blue")
-points(don_col, pch = 3, col = "red", cex = 2)
-text(don_col[,1], don_col[,2]- 0.2, labels = rownames(don_col), cex= 1.2,  srt=30, col="red")
-}
-
-don_row = u_no_covariates[, 2:3]
-rownames(don_row) = row.names(aravo$table)
-don_col = v_no_covariates[, 2:3]
-rownames(don_col) = names(aravo$table)
-norms <- sapply(1:nrow(don_row), function(i) norm(don_row[i,], type = "2")*(norm(don_row[i,], type = "2")>0.5 ))
-mycol <- sapply(norms, function(x) rgb(0, 0, 255, max = 255, alpha = min(255, 1.5*round(x*255)), names = "blue50"))
-norms2 <- sapply(1:nrow(don_col), function(i) norm(don_col[i,], type = "2")*(norm(don_col[i,], type = "2")>0.4 ))
-mycol2 <- sapply(norms2, function(x) rgb(255, 0, 0, max = 255, alpha = min(255, round(x*255)), names = "red50"))
-library(extraDistr)
-{plot(don_row, pch = 20, col = "blue", cex = 1, ylim=c(-1.5,1.5), xlim = c(-1.5,1.5), xlab = "dim 1", ylab ="dim 2")
-points(don_col, pch = 17, col = "red", cex = 0.8)
-text(don_col[,1] , don_col[,2] - 0.3, labels = rownames(don_col), cex= 1.2, col=mycol2)
-text(don_row[,1] + rsign(nrow(don_row)) * 0.3, don_row[,2] + rsign(nrow(don_row)) * 0.3, labels = rownames(don_row), cex= 1.2, col=mycol)
-
-}
-
+plot_interaction(qut_no_covariates$Theta, selectRow = "contrib 10", selectCol = "contrib 10")
+plot_interaction(cbind(qut_no_covariates$Theta, R), quanti.sup = 41:52, choix = "quanti.sup")
 
 ```
 
 ``` {r qut-covariates}
 # Define projection on aravo covariates
+Xr <- R
+Xr <- qr(Xr)
+Xr <- qr.Q(Xr)
+Xc <- C
+Xc <- qr(Xc)
+Xc <- qr.Q(Xc)
+
 aravo_projection=function(X){
   X = as.matrix(X)
   p = function(X, Xr, Xc){
@@ -214,127 +100,11 @@ aravo_projection=function(X){
 
 # Run algorithm with QUT using the known covariates 
 #------------------------------------------------------------------------------------
-# this takes a while
-l_covariates = lambda_QUT_covariates(Y = aravo$table, projection = aravo_projection, n = 100)
-# to not recompute lambda
-#l_covariates = 0.001683863 
-qut_covariates = lori(Y = aravo$table, R = aravo$R, C = aravo$C, lambda = l_covariates)
+# this takes a while with entire data set (45 minutes)
+qut_covariates = lori(Y, R, C)
 
-
-## Extract parameters
-mu_covariates = qut_covariates$mu
-alpha_covariates = qut_covariates$alpha
-beta_covariates = qut_covariates$beta
-rank_covariates = qut_covariates$rank
-Theta_covariates = qut_covariates$Theta
-udv=svd(Theta_covariates)
-u_covariates = udv$u
-v_covariates = udv$v
-d_covariates = udv$d
-
-# Scale with singular values oh Theta
-u_covariates = u_covariates %*% diag(sqrt(d_covariates))
-v_covariates = v_covariates %*% diag(sqrt(d_covariates))
-
-species_coord_covariates = data.frame(v_covariates)[, 1:2]
-names(species_coord_covariates) = c("v1","v2")
-rownames(species_coord_covariates) = colnames(aravo$table)
-species_coord_covariates$name = rownames(species_coord_covariates)
-species_coord_covariates$color = "species"
-
-env_coord_covariates = data.frame(u_covariates)[,1:2]
-names(env_coord_covariates) = c("v1","v2")
-rownames(env_coord_covariates) = rownames(aravo$table)
-env_coord_covariates$name = "o"
-env_coord_covariates$color ="environments"
-
-coord_covariates = rbind.data.frame(species_coord_covariates, env_coord_covariates)
-
-# Plot correlation circles for QUT with covariates ----------------------------------------------------
-
-distance_covariates = as.matrix(pdist(u_covariates, v_covariates))
-rownames(distance_covariates) = rownames(aravo$table)
-colnames(distance_covariates) = colnames(aravo$table)
-which(distance_covariates == min(distance_covariates), arr.ind = TRUE)
-idx_covariates = sort(distance_covariates, index.return = TRUE)$ix[1:20]
-idx_covariates = t(do.call(rbind,lapply(idx_covariates, function(i) which(distance_covariates == distance_covariates[i], arr.ind = TRUE))))
-env_coord_covariates = env_coord_covariates[unique(idx_covariates[1, ]), ]
-env_coord_covariates$name = rownames(env_coord_covariates)
-species_coord_covariates = species_coord_covariates[unique(idx_covariates[2, ]), ]
-species_coord_covariates$name = rownames(species_coord_covariates)
-
-
-don = cbind.data.frame(aravo$table, aravo$R)
-quanti_var_idx = c(1,2,3,4,6)+ncol(aravo$table)
-env_traits = aravo$R[, c(1,2,3,4,6)]
-#cor_env_dim1 = data.frame(sapply(1:5, function(i) cor(as.numeric(env_traits[,i]), u_covariates[,1])))
-#cor_env_dim2 = data.frame(sapply(1:5, function(i) cor(as.numeric(env_traits[,i]), u_covariates[,2])))
-#cor_env_covariates = cbind.data.frame(cor_env_dim1, cor_env_dim2)
-#names(cor_env_covariates) = c("u1","u2")
-#rownames(cor_env_covariates) = colnames(aravo$R)[c(1,2,3,4,6)]
-coord_covariates = rbind.data.frame(species_coord_covariates, env_coord_covariates)
-quanti_sup_idx = (length(unique(idx_covariates[2, ])) + 1):(length(unique(idx_covariates[2, ])) + 
-                                                              length(quanti_var_idx))
-res_ca_env_covariates = CA(10 + don[unique(idx_covariates[1, ]), c(unique(idx_covariates[2, ]), quanti_var_idx)], quanti.sup = quanti_sup_idx, graph = FALSE, ncp = 2)
-res_ca_env_covariates$row$coord[,1:2] =  u_covariates[unique(idx_covariates[1, ]), 1:2] 
-res_ca_env_covariates$row$inertia[1:2] = qut_covariates$d[1:2]
-res_ca_env_covariates$col$coord[,1:2] =  v_covariates[unique(idx_covariates[2,]),1:2] 
-res_ca_env_covariates$col$inertia[1:2] = qut_covariates$d[1:2]
-#res_ca_env_covariates$quanti.sup$coord =  cor_env_covariates[,1:2]
-res_ca_env_covariates$svd$d = qut_covariates$d
-res_ca_env_covariates$svd$U = u_covariates
-res_ca_env_covariates$svd$V = v_covariates
-
-
-spe_traits = aravo$C
-#cor_spe_dim1 = data.frame(sapply(1:ncol(aravo$C), function(i) cor(as.numeric(spe_traits[, i]), v_covariates[, 1])))
-#cor_spe_dim2 = data.frame(sapply(1:ncol(aravo$C), function(i) cor(as.numeric(spe_traits[, i]), v_covariates[, 2])))
-#cor_spe_covariates = cbind.data.frame(cor_spe_dim1, cor_spe_dim2)
-#names(cor_spe_covariates)=c("v1","v2")
-#rownames(cor_spe_covariates) = colnames(aravo$C)
-dondon = cbind.data.frame(t(aravo$table), aravo$C)
-quanti_var_idx = ncol(t(aravo$table)) + 1:4
-quanti_sup_idx = length(unique(idx_covariates[1, ])) + 1:4
-res_ca_spe_covariates = CA(10 + dondon[unique(idx_covariates[2, ]), c(unique(idx_covariates[1, ]), quanti_var_idx)], quanti.sup = quanti_sup_idx, graph=FALSE)
-res_ca_spe_covariates$row$coord[, 1:2] =  v_covariates[unique(idx_covariates[2,]),1:2] 
-res_ca_spe_covariates$row$inertia[1:2] = qut_covariates$d[1:2]
-res_ca_spe_covariates$col$coord[, 1:2] =  u_covariates[unique(idx_covariates[1,]),1:2] 
-res_ca_spe_covariates$col$inertia[1:2] = qut_covariates$d[1:2]
-#res_ca_spe_covariates$quanti.sup$coord =  cor_spe_covariates[c(1,3,6,7),1:2]
-res_ca_spe_covariates$svd$d = qut_covariates$d
-res_ca_spe_covariates$svd$U = u_covariates
-res_ca_spe_covariates$svd$V = v_covariates
-
-plot.CA(res_ca_env_covariates, choix="quanti.sup", title="correlation of environmental traits with principal interaction directions")
-plot.CA(res_ca_spe_covariates, choix="quanti.sup", title="correlation of species traits with principal interaction directions")
-
-don_row = u_covariates[, 1:2]
-rownames(don_row) = row.names(aravo$table)
-don_col = v_covariates[, 1:2]
-rownames(don_col) = names(aravo$table)
-#don_col = don_col[c(1,2,3,5,7,9),]
-#don_row = don_row[c(1,2,3,6,7,8),]
-
-{plot(don_row, pch = 1, col = "blue", cex = 2, ylim=c(-1,1), xlim = c(-0.8,0.5))
-text(don_row[,1], don_row[,2], labels = rownames(don_row), cex= 1.2,  srt=30, col="blue")
-points(don_col, pch = 3, col = "red", cex = 2)
-text(don_col[,1], don_col[,2]- 0.2, labels = rownames(don_col), cex= 1.2, col="red")
-}
-
-norms <- sapply(1:nrow(don_row), function(i) norm(don_row[i,], type = "2")*(norm(don_row[i,], type = "2")>0.1 ))
-mycol <- sapply(norms, function(x) rgb(0, 0, 255, max = 255, alpha = min(255, 5*round(x*255)), names = "blue50"))
-norms2 <- sapply(1:nrow(don_col), function(i) norm(don_col[i,], type = "2")*(norm(don_col[i,], type = "2")>0.1 ))
-mycol2 <- sapply(norms2, function(x) rgb(255, 0, 0, max = 255, alpha = min(255, 4*round(x*255)), names = "red50"))
-library(extraDistr)
-
-
-{plot(don_row, pch = 20, col = "blue", cex = 1, ylim=c(-0.5,0.5), xlim = c(-0.5,0.5), yaxt ="n", xlab = "dim 1", ylab ="", axes = F)
-axis(side=1, at=seq(-0.5,0.5,length.out = 11), labels=seq(-0.5,0.5,length.out = 11))
-points(don_col, pch = 17, col = "red", cex = 0.7)
-text(don_row[,1]+rsign(nrow(don_row)) * 0.05, don_row[,2]+0.2+rsign(nrow(don_row)) * 0.05, labels = rownames(don_row), cex= 1,  srt=30, col=mycol)
-
-text(don_col[,1]+rsign(nrow(don_col)) * 0.05, don_col[,2]- 0.2+rsign(nrow(don_col)) * 0.05, labels = rownames(don_col), cex= 1,  srt=30, col=mycol2)
-}
+plot_interaction(qut_no_covariates$Theta, selectRow = "contrib 10", selectCol = "contrib 10")
+plot_interaction(cbind(qut_no_covariates$Theta, R), quanti.sup = 41:52, choix = "quanti.sup")
 
 ```
 

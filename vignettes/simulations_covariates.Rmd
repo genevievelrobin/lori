@@ -1,0 +1,136 @@
+---
+title: "simulations_covariates"
+author: "Genevieve Robin"
+date: "3/8/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Simulations of contingency table with covariates
+
+In this document we simulate contingency tables with covariates, under different correlation regimes of the covariates. We compare lori and Correspondence Analysis in terms of estimation error.
+```{r load-packages}
+library(ggplot2)
+library(svd)
+library(FactoMineR)
+#install.packages("lori")
+library(lori)
+library(mvtnorm)
+
+```
+
+## Simulation setup
+```{r pressure, echo=FALSE}
+list_R <- list()
+list_C <- list()
+list_mu <- list()
+list_alpha <- list()
+list_beta <- list()
+list_theta <- list()
+list_xbar <- list()
+list_xlori <- list()
+list_xca <- list()
+list_Y <- list()
+list_lambda <- list()
+
+m1 = 50
+m2 = 30
+m = min(m1, m2)
+q = 2
+K1 <- 2
+K2 <- 3
+SigmaR <- matrix(diag(2), nrow = K1) # independent covariates
+# SigmaC <- matrix(c(1, 0.2, 1, 0.2, 1), nrow = K1) # correlated covariates
+SigmaC <- matrix(diag(K1), nrow = K1) # independent covariates
+# SigmaC <- matrix(c(1, 0, 0.2, 0.3, 1, 0.3, 0.2, 0.3, 1), nrow = K2) # correlated covariates
+```
+
+## Replicate 100 experiments
+
+```{r}
+for(it in 1:100){
+  R <- rmvnorm(m1/2, mean = c(0, 0), sigma = SigmaR)
+  R <- scale(rbind(R, rmvnorm(m1/2, mean = c(0.5, 0.5), sigma = SigmaR)), center = F)
+  list_R[[it]] <- R
+  C <- rmvnorm(m2/2, mean = c(0, 0, 0), sigma = diag(3))
+  C <- scale(rbind(C, rmvnorm(m2/2, mean = c(0.5, 0.5, 0.5), sigma = diag(3))), center = F)
+  list_C[[it]] <- C
+  R_qr <- qr(R)
+  R_qr <- qr.Q(R_qr)
+  C_qr <- qr(C)
+  C_qr <- qr.Q(C_qr)
+  
+  projR <- function(X){
+    X - R_qr%*%t(R_qr)%*%X
+  }
+  projC <- function(X){
+    X - X%*%C_qr%*%t(C_qr)
+  }
+  proj <- function(X){
+    X - R_qr%*%t(R_qr)%*%X - X%*%C_qr%*%t(C_qr) + R_qr%*%t(R_qr)%*%X%*%C_qr%*%t(C_qr)
+  }
+  
+  mu <- matrix(rnorm(mean = 0, K1*K2), nrow = K1)
+  list_mu[[it]] <- mu
+  alpha <- projC(matrix(rnorm(mean = 0, K1*m2), nrow = K1))
+  list_alpha[[it]] <- alpha
+  beta <- projR(matrix(rnorm(mean = 0, K2*m1), nrow = m1))
+  list_beta[[it]] <- beta
+  X_null = 0.5*(R%*%mu%*%t(C) + R%*%alpha + beta%*%t(C))
+  q = 4
+  u = matrix(rnorm(m1 * m), nrow = m1, ncol = m)
+  u = qr(u)
+  u = qr.Q(u)
+  v = matrix(rnorm(m * m2), nrow = m2, ncol = m)
+  v = qr(v)
+  v = qr.Q(v)
+  uu = u[, 1:q]
+  vv = v[, 1:q]
+  sigma = sum(svd(X_null)$d)
+  d = rep(sigma/q, q)
+  if (q > 1) {
+    d = diag(d)
+    theta0 = uu %*% d %*% t(vv)
+  } else {
+    theta0 = d * uu %*% t(vv)
+  }
+  X_bar = 2 + X_null + proj(theta0)
+  list_theta[[it]] <- theta0
+  list_xbar[[it]] <- X_bar
+  X_bar[which(X_bar>10)] <- 10
+  Y = matrix(rpois(n = m1 * m2, exp(c(X_bar))), nrow = m1)
+  matrix_loss_pois <- function(Y, X){
+    W <- Y
+    W[which(is.na(W))] <- 0
+    sum((- W*X + W*exp(X)))
+    
+  }
+  list_Y[[it]] <- Y
+  lambda <- lambda_QUT_covariates(Y, projection = proj, n = 100)
+  list_lambda[[it]] <- lambda
+  
+  X_lori <- lori(Y, R = R, C = C, lambda = lambda, projection = proj)
+  list_xlori[[it]] <- X_lori
+  
+  res_ca <- CA(Y, ncp = 2)
+  X_ca <- reconst(res_ca)
+  list_xca[[it]] <- X_ca
+  
+}
+
+
+```
+
+## Results
+```{r}
+estim_lori <- sapply(1:100, function(i) norm(list_xlori[[i]]$X-list_xbar[[i]], type = "F")/norm(list_xbar[[i]], type = "F"))
+estim_ca <- sapply(1:100, function(i) norm(list_xca[[i]]-exp(list_xbar[[i]]), type = "F")/norm(list_xbar[[i]], type = "F"))
+boxplot(estim_lori, estim_ca)
+t <- summary(estim_lori)
+t <- rbind(t, summary(estim_ca))
+
+```
+

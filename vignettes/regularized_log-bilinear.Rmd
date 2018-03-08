@@ -1,5 +1,5 @@
 ---
-title: "Regularized log-bilinear model"
+title: "lori: Denoising and visualization of Contigency Tables with covariates "
 author: "Genevieve Robin"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -15,15 +15,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Regularized log-bilinear model
 
-This vignette explains how to use the package lori to fit a regularized log-bilinear model for denoising and visualizing count data. Let $Y\in\mathbb{R}^{n\times p}$ be a contingency table modeled as Poisson variables. Let $X\in\mathbb{R}^{n\times p}$ be a parameter matrix such that for all $1\leq i\leq n$ and $1\leq j\leq p$, and denoting $\mathcal{P}(\lambda)$ the Poisson distribution of parameter $\lambda$:
+This vignette explains how to use the package lori to fit a regularized log-bilinear model for denoising and visualizing count data. Let $Y\in\mathbb{R}^{n\times p}$ be a contingency table modeled as Poisson variables. Let $X\in\mathbb{R}^{n\times p}$ be a parameter matrix such that for all $1\leq i\leq n$ and $1\leq j\leq p$, and denoting $\mathcal{P}(l)$ the Poisson distribution of parameter $l$:
 $$Y_{ij}|X_{ij} \sim \mathcal{P}(\mathrm{e}^X_{ij}).$$
 The log-bilinear model assumes the following decomposition for $X_{ij}$:
 $$X_{ij} = \mu + \alpha_i + \beta_j + \Theta_{ij}, $$
 where $\mu$ is an offset, $\alpha_i$ and $\beta_j$ are main row and column effects, and $\Theta_{ij}$ is an interaction term. When the matrix $\Theta$ is constrained to have a fixed rank $K$, 
 $$X_{ij} = \mu + \alpha_i + \beta_j + \Theta_{ij},\quad \text{rank}(\Theta) = K$$
 is called the RC($K$) model. We consider a variant of the log-bilinear model where the rank constraint $\text{rank}(\Theta) = K$ is replaced by a convex relaxation of with a nuclear norm penalty of $\Theta$. Our estimator is the following.
-$$(\hat\mu, \hat\alpha,\hat\beta,\hat\Theta) = \text{argmin}_{\mu, \alpha,\beta,\Theta} \Phi(\mu, \alpha,\beta,\Theta) + \lambda\left\|\Theta\right\|_*,\\
-\text{subject to } \sum_{i=1}^n\alpha_i = 0, \sum_{j=1}^p\beta_j = 0, \sum_{i,j}\Theta_{ij} = 0,$$
+$$(\hat\mu, \hat\alpha,\hat\beta,\hat\Theta) = \text{argmin}_{\mu, \alpha,\beta,\Theta} \Phi(\mu, \alpha,\beta,\Theta) + \gamma\left\|\Theta\right\|_*,\\
+s.t.\quad \sum_{i=1}^n\alpha_i = 0, \sum_{j=1}^p\beta_j = 0, \sum_{i,j}\Theta_{ij} = 0,$$
 where $\Phi$ is the Poisson log-likelihood
 $$ \Phi(\mu, \alpha,\beta,\Theta) = \sum_{i=1}^n\sum_{j=1}^p -Y_{ij}X_{ij} + \exp(X_{ij}),$$
 and $\lambda$ is a regularization parameter acting as a trade-off between fitting a data and having a low rank. We refer to this method as Low-rank Interaction (LORI). Such regularization can prove useful when counts are large, $Y$ contains many $0$ values or is of large dimensions, situations where classical implementations of the RC($K$) model might fail.
@@ -63,30 +63,13 @@ colnames(theta_lori) <- colnames(death)
 rownames(theta_lori) <- rownames(death)
 ```
 
-
-Previous analyses on this data, made by different authors, selected a rank of $3$ for the matrix $\Theta$ in this data set. Therefore we compare our result with the model RC($3$). To do so we use the implementations of \url{http://cta.isw.rwth-aachen.de/data/uploads/.DAV/webappendix/cta_web-appendix.pdf}, A.3.5.
-
-```{r apply-RC(3), echo=FALSE}
-## Compute RC(3) ML estimate
-death_fit_rc = rc(as.matrix(death), 3, iterMax = 1e4)
-u_rc <- death_fit_rc$assoc$row[,,1]
-v_rc <- death_fit_rc$assoc$col[,,1]
-phi_rc <- diag(as.numeric(death_fit_rc$assoc$phi))
-theta_rc <- u_rc%*%phi_rc%*%t(v_rc)
-```
-
-
-We compare the results with the RC($3$) analysis. We represent biplot visualizations of the data in the two first dimensions of interaction, keeping only the 10 death causes that have the highest contributions in the first two dimensions. 
+We represent biplot visualizations of the data in the two first dimensions of interaction, keeping only the 10 death causes that have the highest contributions in the first two dimensions. 
 Models such as log-bilinear models provide a distance interpretation as follows. 
-Two age categories or two mortality causes that are close to one another have similar profiles in the contingency table whereas an age category and a mortality cause that are close interact highly. 
-The interaction coefficients estimated with RC($3$) are very large in amplitude and largest coefficients correspond to rare events. In particular, the age category $0-1$ and related mortality causes such as \textit{Sudden infant death syndrome} and \textit{Complications in pregnancy and childbirth} completely drive the first dimension. Our regularized approach prevents such behaviors. The effect of the $0-1$ category is also visible but shrunk, which reveals other important interactions that are not observed on the RC($3$) biplot. The shape of the biplot and in particular the structure of the age categories (in red) is known as the Guttman or horseshoe effect. 
+Two age categories or two mortality causes that are close to one another have similar profiles in the contingency table whereas an age category and a mortality cause that are close interact highly. The shape of the biplot and in particular the structure of the age categories (in red) is known as the Guttman or horseshoe effect. 
 
 ## Two dimensional display plot
 
 ```{r display-plots}
 plot_interaction(theta_lori, title = "Display plot of LORI model", selectRow = "contrib 10")
-
-plot_interaction(theta_rc, title = "Display plot of RC(3) model", selectRow = "contrib 10")
-
 ```
 

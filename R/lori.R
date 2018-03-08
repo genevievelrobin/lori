@@ -1,3 +1,24 @@
+#' Main function to be used to fit the LORI model
+#' @param Y a matrix of counts (m1 x m2).
+#' @param R a matrix of row covariates (m1 x K1)
+#' @param C a matrix of column covariates (m2 x K2)
+#' @param lambda a positive number, the regularization parameter
+#' @param projection a projection function, by default centers by rows and columns
+#' @param Theta_init an initial value for the matrix of interactions (same size as Y).
+#' @param gamma_init an initial value for the dual matrix (dual variable, same size as Y).
+#' @param X_init an initial value for the parameter matrix (dual variable, same size as Y).
+#' @param tau a positive number (augmented Lagrangian parameter)
+#' @param epsilon a positive number, the convergence criterion
+#' @param tol a positive number, the convergence criterion for optimization step inside iterations
+#' @param max_it a positive number, the maximum number of iterations
+#' @param upper a number, the upper bound on the entries of matrix X
+#' @param lower a number, the lower bound on the entries of matrix X
+#' @return The value of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma}) taken at \code{X}.
+#' @export
+#' @examples
+#' X = matrix(rnorm(rep(0, 15)), 5)
+#' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+#' res_lori <- lori(Y)
 lori = function(Y, R = NULL, C = NULL, lambda = NULL, projection = default_projection, gamma_init = NULL, X_init = NULL,
                   Theta_init = NULL, tau = 0.1, epsilon = 1e-6,
                   tol = 1e-12, max_it = 5 * 1e5, upper = -log(1e-6), lower = log(1e-6)){
@@ -44,7 +65,7 @@ lori = function(Y, R = NULL, C = NULL, lambda = NULL, projection = default_proje
   rownames(alpha_C) <- rownames(Y)
   return(structure(list(X = X, Theta = Theta, d = res$d, gamma = res$gamma, mu = mu, alpha = alpha, beta = beta,
                         R_mu_C = R_mu_C, R_beta = R_beta, alpha_C = alpha_C,
-                        objective = res$objective, deviance = res$deviance,
+                        objective = res$objective,
                         iter = res$count, rank = res$rank, convergence = res$iter < max_it)))
 
 

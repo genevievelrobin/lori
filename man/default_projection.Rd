@@ -7,15 +7,17 @@
 default_projection(M)
 }
 \arguments{
-\item{X}{A matrix.}
+\item{M}{A matrix.}
 }
 \value{
-The projection of X
+M centered by row and column
 }
 \description{
 Default projection on covariate space: center by row and column.
 }
 \examples{
+\dontshow{
 X = matrix(rnorm(rep(0, 15)), 5)
-default_projection(X)
+proj_X <- default_projection(X)
+}
 }

@@ -26,10 +26,12 @@ The value of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma})
 Computes the value of the objective function in X to be optimized at each iteration of ADMM.
 }
 \examples{
+\dontshow{
 X = matrix(rnorm(rep(0, 15)), 5)
-Theta = default_projection(matrix(rnorm(rep(0, 15)), 5))
-Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-gamma = matrix(rnorm(rep(0, 15)), 5)
-tau = 1e-3
-objective_function(X, Y,  projection = default_projection, Theta, gamma, tau)
+Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+Theta <- default_projection(X)
+gamma <- matrix(0, nrow(X), ncol(X))
+tau <- 0.1
+obj_X <- objective_function(X, Y, default_projection, Theta, gamma, tau)
+}
 }

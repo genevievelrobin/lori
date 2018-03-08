@@ -43,7 +43,9 @@ The value of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma})
 Performs the Alternating Descent Method of Multipliers (ADMM) algorithm to estimate the LoRI parameters.
 }
 \examples{
+\dontshow{
 X = matrix(rnorm(rep(0, 15)), 5)
-Y = matrix(rpois(length(c(X)), exp(c(X))), 5)
-res = admm_algorithm(Y)
+Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
+res_admm <- admm_algorithm(Y)
+}
 }
