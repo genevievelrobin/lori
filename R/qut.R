@@ -4,6 +4,8 @@
 #' @param lambda2 A positive number, the regularization parameter for covariates main effects
 #' @param q A number between \code{0} and \code{1}. The quantile of the distribution of $lambda_{QUT}$ to take.
 #' @param N An integer. The number of parametric bootstrap samples to draw.
+#' @param reff [boolean] whether row effects should be fitted, default value is TRUE
+#' @param ceff [boolean] whether column effects should be fitted, default value is TRUE
 #' @return the value of $lambda_{QUT}$ to use in LoRI.
 #' @export
 #' @examples

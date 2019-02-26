@@ -1,25 +1,26 @@
 Package: lori
 Type: Package
-Title: Low-rank Interaction Contingency Tables (Title Case)
-Version: 0.1.0
+Title: Low-Rank Interactions in Count Data with Covariates
+Version: 2.1.0
 Authors@R: person("Genevieve", "Robin", email = "genevieve.robin@polytechnique.edu",
   role = c("aut", "cre"))
-Maintainer: Genevi\`{e}ve Robin <genevieve.robin@polytechnique.edu>
-Description: Estimation and visualization of contingency tables
+Maintainer: Genevieve Robin <genevieve.robin@polytechnique.edu>
+Description: Analysis, imputation, and multiple imputation of count data using covariates. LORI uses a log-linear model where main row and column effects are decomposed as regression terms on known covariates. A residual low-rank interaction term is also fitted. LORI returns estimates of covariate effects and interactions, as well as an imputed count table. The package also contains a multiple imputation procedure.
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Imports: psych,
-         svd,
-         NLRoot,
-         FactoMineR,
+Imports: svd,
          glmnet,
-         pdist,
-         lars,
-         ade4,
-	 lattice
+	 stats,
+	 data.table,
+	 doParallel,
+	 parallel,
+	 corpcor,
+	 foreach,
+	 FactoMineR
 Suggests: 
     knitr,
     rmarkdown,
     testthat
 VignetteBuilder: knitr
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
