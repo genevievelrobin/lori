@@ -2,50 +2,51 @@
 % Please edit documentation in R/lori.R
 \name{lori}
 \alias{lori}
-\title{Main function to be used to fit the LORI model}
+\title{LORI method.}
 \usage{
-lori(Y, R = NULL, C = NULL, lambda = NULL,
-  projection = default_projection, gamma_init = NULL, X_init = NULL,
-  Theta_init = NULL, tau = 0.1, epsilon = 1e-06, tol = 1e-12,
-  max_it = 5 * 1e+05, upper = -log(1e-06), lower = log(1e-06))
+lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, reff = T,
+  ceff = T, rank.max = 10, thresh = 1e-05, maxit = 1000,
+  trace.it = F)
 }
 \arguments{
-\item{Y}{a matrix of counts (m1 x m2).}
+\item{Y}{[matrix, data.frame] count table (nxp).}
 
-\item{R}{a matrix of row covariates (m1 x K1)}
+\item{cov}{[matrix, data.frame] design matrix (np*q) in order row1xcol1,row2xcol2,..,rownxcol1,row1xcol2,row2xcol2,...,...,rownxcolp}
 
-\item{C}{a matrix of column covariates (m2 x K2)}
+\item{lambda1}{[positive number] the regularization parameter for the interaction matrix.}
 
-\item{lambda}{a positive number, the regularization parameter}
+\item{lambda2}{[positive number] the regularization parameter for the covariate effects.}
 
-\item{projection}{a projection function, by default centers by rows and columns}
+\item{reff}{[boolean] whether row effects should be fitted, default value is TRUE}
 
-\item{gamma_init}{an initial value for the dual matrix (dual variable, same size as Y).}
+\item{ceff}{[boolean] whether column effects should be fitted, default value is TRUE}
 
-\item{X_init}{an initial value for the parameter matrix (dual variable, same size as Y).}
+\item{rank.max}{[integer] maximum rank of interaction matrix (smaller than min(n-1,p-1))}
 
-\item{Theta_init}{an initial value for the matrix of interactions (same size as Y).}
+\item{thresh}{[positive number] convergence tolerance of algorithm, by default \code{1e-6}.}
 
-\item{tau}{a positive number (augmented Lagrangian parameter)}
+\item{maxit}{[integer] maximum allowed number of iterations.}
 
-\item{epsilon}{a positive number, the convergence criterion}
-
-\item{tol}{a positive number, the convergence criterion for optimization step inside iterations}
-
-\item{max_it}{a positive number, the maximum number of iterations}
-
-\item{upper}{a number, the upper bound on the entries of matrix X}
-
-\item{lower}{a number, the lower bound on the entries of matrix X}
+\item{trace.it}{[boolean] whether convergence information should be printed}
 }
 \value{
-The value of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma}) taken at \code{X}.
+A list with the following elements
+\item{X}{nxp matrix of log of expected counts}
+\item{alpha}{row effects}
+\item{beta}{column effects}
+\item{epsilon}{covariate effects}
+\item{theta}{nxp matrix of row-column interactions}
+\item{imputed}{nxp matrix of imputed counts}
+\item{means}{nxp matrix of expected counts (exp(X))}
+\item{cov}{npxK matrix of covariates}
 }
 \description{
-Main function to be used to fit the LORI model
+LORI method.
 }
 \examples{
-X = matrix(rnorm(rep(0, 15)), 5)
-Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
-res_lori <- lori(Y)
+\dontshow{
+X <- matrix(rnorm(50), 25)
+Y <- matrix(rpois(25, 1:25), 5)
+res <- lori(Y, X, 10, 10)
+}
 }

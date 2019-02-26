@@ -1,72 +1,96 @@
-#' Main function to be used to fit the LORI model
-#' @param Y a matrix of counts (m1 x m2).
-#' @param R a matrix of row covariates (m1 x K1)
-#' @param C a matrix of column covariates (m2 x K2)
-#' @param lambda a positive number, the regularization parameter
-#' @param projection a projection function, by default centers by rows and columns
-#' @param Theta_init an initial value for the matrix of interactions (same size as Y).
-#' @param gamma_init an initial value for the dual matrix (dual variable, same size as Y).
-#' @param X_init an initial value for the parameter matrix (dual variable, same size as Y).
-#' @param tau a positive number (augmented Lagrangian parameter)
-#' @param epsilon a positive number, the convergence criterion
-#' @param tol a positive number, the convergence criterion for optimization step inside iterations
-#' @param max_it a positive number, the maximum number of iterations
-#' @param upper a number, the upper bound on the entries of matrix X
-#' @param lower a number, the lower bound on the entries of matrix X
-#' @return The value of the augmented Lagrangian (with fixed \code{Theta} and \code{gamma}) taken at \code{X}.
+#' LORI method.
+#'
+#' @param Y [matrix, data.frame] count table (nxp).
+#' @param cov [matrix, data.frame] design matrix (np*q) in order row1xcol1,row2xcol2,..,rownxcol1,row1xcol2,row2xcol2,...,...,rownxcolp
+#' @param lambda1 [positive number] the regularization parameter for the interaction matrix.
+#' @param lambda2 [positive number] the regularization parameter for the covariate effects.
+#' @param reff [boolean] whether row effects should be fitted, default value is TRUE
+#' @param ceff [boolean] whether column effects should be fitted, default value is TRUE
+#' @param rank.max [integer] maximum rank of interaction matrix (smaller than min(n-1,p-1))
+#' @param thresh [positive number] convergence tolerance of algorithm, by default \code{1e-6}.
+#' @param maxit [integer] maximum allowed number of iterations.
+#' @param trace.it [boolean] whether convergence information should be printed
+#' @import glmnet stats
 #' @export
+#' @return A list with the following elements
+#' \item{X}{nxp matrix of log of expected counts}
+#' \item{alpha}{row effects}
+#' \item{beta}{column effects}
+#' \item{epsilon}{covariate effects}
+#' \item{theta}{nxp matrix of row-column interactions}
+#' \item{imputed}{nxp matrix of imputed counts}
+#' \item{means}{nxp matrix of expected counts (exp(X))}
+#' \item{cov}{npxK matrix of covariates}
 #' @examples
-#' X = matrix(rnorm(rep(0, 15)), 5)
-#' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
-#' res_lori <- lori(Y)
-lori = function(Y, R = NULL, C = NULL, lambda = NULL, projection = default_projection, gamma_init = NULL, X_init = NULL,
-                  Theta_init = NULL, tau = 0.1, epsilon = 1e-6,
-                  tol = 1e-12, max_it = 5 * 1e5, upper = -log(1e-6), lower = log(1e-6)){
-  Y = as.matrix(Y)
-  m1 = nrow(Y)
-  m2 = ncol(Y)
-  n = sum(!is.na(Y))
-  cov = FALSE
-  if(!is.null(R) || !is.null(C)){
-    cov = TRUE
-    R=qr(as.matrix(R))
-    R=qr.Q(R)
-    C=qr(as.matrix(C))
-    C=qr.Q(C)
-    projection = function(X){
-      return(X - R %*% t(R) %*% X - X %*% C %*% t(C) + R %*% t(R) %*% X %*% C %*% t(C))
-    }
+#' \dontshow{
+#' X <- matrix(rnorm(50), 25)
+#' Y <- matrix(rpois(25, 1:25), 5)
+#' res <- lori(Y, X, 10, 10)
+#' }
+lori <-
+  function(Y,
+           cov = NULL,
+           lambda1 = NULL,
+           lambda2 = NULL,
+           reff = T,
+           ceff = T,
+           rank.max = 10,
+           thresh = 1e-5,
+           maxit = 1e3,
+           trace.it = F)
+  {
+    Y <- as.matrix(Y)
+    d <- dim(Y)
+    n <- d[1]
+    p <- d[2]
+    if (!is.null(cov))
+      q <- ncol(cov)
+    else
+      q <- 0
+    rank.max = min(n - 1, p - 1, rank.max)
+    #lambda2 <- rep(lambda2,n+p+q)
+    #covsc <- cov[, apply(cov, 2, is.factor)==F]
+    #sc <- mean(apply(covsc, 2, sd))
+    #if(is.na(sc)) sc <- 1
+    #if(is.null(sc)) sc <- 1
+    #if(sc==0) sc <- 1
+    #lambda2[1:n] <- lambda2[1:n]*sqrt(p*(1-1/n)^2/(n*p))/sc
+    #lambda2[(n+1):(n+p)] <- lambda2[(n+1):(n+p)]*sqrt(n*(1-1/p)^2/(n*p))/sc
+    res <- altmin(
+      Y,
+      lambda1,
+      lambda2,
+      cov = cov,
+      thresh = thresh,
+      trace.it = trace.it,
+      rank.max = rank.max,
+      reff = reff,
+      ceff = ceff
+    )
+    X <- res$X
+    alpha <- res$alpha
+    beta <- res$beta
+    epsilon <- res$epsilon
+    theta <- res$theta
+    #imputed <- matrix(rpois(n*p, lambda=c(exp(X))), nrow=n)
+    imputed <- exp(X)
+    imputed[!is.na(Y)] <- Y[!is.na(Y)]
+    means <- exp(X)
+    res2 <-
+      structure(
+        list(
+          X = X,
+          alpha = alpha,
+          beta = beta,
+          epsilon = epsilon,
+          theta = theta,
+          imputed = imputed,
+          means = means,
+          cov = cov,
+          objective=res$objective
+        )
+      )
+    return(res2)
   }
-  res = admm_algorithm(Y, cov, lambda, projection, gamma_init, X_init, Theta_init, tau, epsilon, tol, max_it, upper, lower)
-  X = res$X
-  colnames(X) <- colnames(Y)
-  rownames(X) <- rownames(Y)
-  if(is.null(R)){
-    R = (1 / sqrt(m1)) * matrix(1, m1, 1)
-  }
-  if(is.null(C)){
-    C = (1 / sqrt(m2)) * matrix(1, 1, m2)
-  }
-  if(length(C) == ncol(X)) C = t(C)
-  mu = solve(t(R) %*% R) %*% t(R) %*% X %*% C %*% solve(t(C) %*% C)
-  R_mu_C = R %*% mu %*% t(C)
-  beta = solve(t(R) %*% R) %*% t(R) %*% (X - R_mu_C)
-  R_beta = R %*% beta
-  alpha = (X - R_mu_C) %*% C %*% solve(t(C) %*% C)
-  alpha_C = alpha %*% t(C)
-  Theta <- res$Theta
-  colnames(Theta) <- colnames(Y)
-  rownames(Theta) <- rownames(Y)
-  colnames(R_mu_C) <- colnames(Y)
-  rownames(R_mu_C) <- rownames(Y)
-  colnames(R_beta) <- colnames(Y)
-  rownames(R_beta) <- rownames(Y)
-  colnames(alpha_C) <- colnames(Y)
-  rownames(alpha_C) <- rownames(Y)
-  return(structure(list(X = X, Theta = Theta, d = res$d, gamma = res$gamma, mu = mu, alpha = alpha, beta = beta,
-                        R_mu_C = R_mu_C, R_beta = R_beta, alpha_C = alpha_C,
-                        objective = res$objective,
-                        iter = res$count, rank = res$rank, convergence = res$iter < max_it)))
 
 
-}
