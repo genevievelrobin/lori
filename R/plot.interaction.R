@@ -27,12 +27,13 @@
 #' @param habillage color the individuals among a categorical variable (give the number of the categorical supplementary variable or its name)
 #' @param legend a list of arguments that defines the legend if needed (when individuals are drawn according to a variable); see the arguments of the function legend
 #' @param ... further arguments passed to or from other methods, such as cex, cex.main, ...
+#' @export
 #' @examples
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
 #' res_lori <- lori(Y, cov=cbind(c(X),c(X)), lambda1=1, lambda2=1)
-#' p <- plot.interaction(res_lori$theta)
-plot.interaction <- function(theta, quanti.sup = NULL, axes = c(1, 2), xlim = NULL, ylim = NULL,
+#' p <- plot(res_lori$theta)
+plot <- function(theta, quanti.sup = NULL, axes = c(1, 2), xlim = NULL, ylim = NULL,
                              invisible = c("none","row", "col", "row.sup", "col.sup", "quali.sup"),
                              choix = "CA", col.row = "blue", col.col = "red",
                              col.row.sup = "darkblue", col.col.sup = "darkred",
