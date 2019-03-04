@@ -72,8 +72,7 @@ lori <-
     beta <- res$beta
     epsilon <- res$epsilon
     theta <- res$theta
-    #imputed <- matrix(rpois(n*p, lambda=c(exp(X))), nrow=n)
-    imputed <- exp(X)
+    imputed <- matrix(rpois(n*p, lambda=c(exp(X))), nrow=n)
     imputed[!is.na(Y)] <- Y[!is.na(Y)]
     means <- exp(X)
     res2 <-
@@ -90,6 +89,7 @@ lori <-
           objective=res$objective
         )
       )
+    class(res2) <- c("lori", "list")
     return(res2)
   }
 

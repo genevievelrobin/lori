@@ -1,7 +1,7 @@
 Package: lori
 Type: Package
 Title: Low-Rank Interactions in Count Data with Covariates
-Version: 2.1.0
+Version: 2.1.2
 Authors@R: person("Genevieve", "Robin", email = "genevieve.robin@polytechnique.edu",
   role = c("aut", "cre"))
 Maintainer: Genevieve Robin <genevieve.robin@polytechnique.edu>
@@ -22,5 +22,4 @@ Suggests:
     knitr,
     rmarkdown,
     testthat
-VignetteBuilder: knitr
 RoxygenNote: 6.1.0

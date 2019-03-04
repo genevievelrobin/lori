@@ -16,6 +16,10 @@ qut(Y, cov, lambda2 = 0, q = 0.95, N = 100, reff = T, ceff = T)
 \item{q}{A number between \code{0} and \code{1}. The quantile of the distribution of $lambda_{QUT}$ to take.}
 
 \item{N}{An integer. The number of parametric bootstrap samples to draw.}
+
+\item{reff}{[boolean] whether row effects should be fitted, default value is TRUE}
+
+\item{ceff}{[boolean] whether column effects should be fitted, default value is TRUE}
 }
 \value{
 the value of $lambda_{QUT}$ to use in LoRI.

@@ -3,8 +3,7 @@
 #' remaining after discarding the effects of the covariates. The interpretation is the following.
 #' A row and a column that are close in Euclidean distance interact highly. Two rows or two columns that
 #' are close in Euclidean distance have similar profiles.
-#' @param theta An interaction matrix (theta in output from the application of the lori function).  Theta can have extra columns corresponding to supplementary quantitative variables
-#' @param quanti.sup a vector of column indices giving the column indices of the supplementary quantitative variables if there are some.
+#' @param x a lori object resulting from the lori function
 #' @param axes a vector of integers of length two, indicating which axes to plot (c(1,2) means that the first two directions are plotted).
 #' @param xlim a vector of length two indicating the limits of the plot abscissa.
 #' @param ylim a vector of length two indicating the limits of the plot ordinate.
@@ -14,6 +13,7 @@
 #' @param col.col a color for columns points
 #' @param col.row.sup a color for the supplementary rows points
 #' @param col.col.sup a color for supplementary columns points
+#' @param col.quali.sup a color for the supplementary quanlitative variables
 #' @param col.quanti.sup a color for the supplementary quantitative variables
 #' @param label a list of character for the elements which are labelled (by default, all the elements are labelled ("row", "row.sup", "col", "col.sup","quali.sup")
 #' @param title string corresponding to the title of the graph you draw (by default NULL and a title is chosen)
@@ -27,45 +27,36 @@
 #' @param habillage color the individuals among a categorical variable (give the number of the categorical supplementary variable or its name)
 #' @param legend a list of arguments that defines the legend if needed (when individuals are drawn according to a variable); see the arguments of the function legend
 #' @param ... further arguments passed to or from other methods, such as cex, cex.main, ...
-#' @export
+#' @method plot lori
+#' @S3method plot lori
 #' @examples
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)
 #' res_lori <- lori(Y, cov=cbind(c(X),c(X)), lambda1=1, lambda2=1)
-#' p <- plot(res_lori$theta)
-plot <- function(theta, quanti.sup = NULL, axes = c(1, 2), xlim = NULL, ylim = NULL,
-                             invisible = c("none","row", "col", "row.sup", "col.sup", "quali.sup"),
-                             choix = "CA", col.row = "blue", col.col = "red",
-                             col.row.sup = "darkblue", col.col.sup = "darkred",
-                             col.quanti.sup = "blue",label = c("all", "none", "row", "row.sup", "col",
-                                                               "col.sup", "quali.sup"), title = NULL,
-                             palette = NULL, autoLab = c("auto", "yes", "no"), new.plot = FALSE,
-                             selectRow = NULL, selectCol = NULL, unselect = 0.7, shadowtext = FALSE,
-                             habillage = "none", legend = list(bty = "y",  x = "topleft"), ...){
-  duv <- svd(theta[, setdiff(1:ncol(theta), quanti.sup)])
+#' p <- plot(res_lori)
+plot.lori <- function(x, axes = c(1, 2),
+                      xlim = NULL, ylim = NULL, invisible = c("none","row", "col", "row.sup", "col.sup","quali.sup"), choix = c("CA","quanti.sup"), col.row = "blue",
+                      col.col = "red", col.row.sup = "darkblue", col.col.sup = "darkred",col.quali.sup ="magenta",
+                      col.quanti.sup="blue",label = c("all","none","row", "row.sup", "col","col.sup", "quali.sup"), title = NULL, palette=NULL,
+                      autoLab = c("auto","yes","no"),new.plot=FALSE, selectRow = NULL, selectCol = NULL,
+                      unselect = 0.7,shadowtext = FALSE, habillage = "none", legend = list(bty = "y", x = "topleft"),...){
+  theta <- x$theta
+  duv <- svd(theta)
   ## Multiply interaction by singular values
   u <- duv$u%*%diag(sqrt(duv$d))
   v <- duv$v%*%diag(sqrt(duv$d))
-  theta[,setdiff(1:ncol(theta), quanti.sup)] <- theta[,setdiff(1:ncol(theta), quanti.sup)]+2
-  res_ca <- FactoMineR::CA(theta, graph = F, quanti.sup = quanti.sup)
+  res_ca <- FactoMineR::CA(x$imputed, graph = F)
   res_ca$row$coord <- u
   rownames(res_ca$row$coord) <- rownames(theta)
   res_ca$col$coord <- v
-  rownames(res_ca$col$coord) <- colnames(theta)[setdiff(1:ncol(theta), quanti.sup)]
+  rownames(res_ca$col$coord) <- colnames(theta)
   res_ca$eig[,1] <- duv$d[1:length(res_ca$eig[,1])]
   denom <- sum(res_ca$eig[,1]^2)
   if(denom==0) denom <- 1
   res_ca$eig[,2] <- res_ca$eig[,1]^2/denom
   res_ca$eig[,3] <- cumsum(res_ca$eig[,2])
-  if(!is.null(quanti.sup)){
-    res_ca$quanti.sup$coord <- t(theta[, quanti.sup])%*%duv$u
-    norms <- sqrt(rowSums(res_ca$quanti.sup$coord^2))
-    res_ca$quanti.sup$coord <- sweep(res_ca$quanti.sup$coord, 1, norms, "/")
-  }
   if(is.null(title)){
-    if(choix == "CA") {
-      title <- "2D Display plot of interaction directions"
-    } else if (choix == "quanti.sup") title <- "Supplementary variables on the interaction map"
+    title <- "2D Display plot of interaction directions"
   }
   FactoMineR::plot.CA(res_ca, axes = axes, xlim = xlim, ylim = ylim, invisible = invisible,
                       choix = choix, col.row = col.row, col.col = col.col, col.row.sup = "darkblue",

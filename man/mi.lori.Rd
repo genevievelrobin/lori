@@ -4,7 +4,7 @@
 \alias{mi.lori}
 \title{Multiple imputation of count data using side information}
 \usage{
-mi.lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, M = 100,
+mi.lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, M = 25,
   prob = 0.1, reff = T, ceff = T, rank.max = 10, thresh = 1e-05,
   maxit = 1000, trace.it = F)
 }
