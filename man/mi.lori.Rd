@@ -2,11 +2,11 @@
 % Please edit documentation in R/mi.lori.R
 \name{mi.lori}
 \alias{mi.lori}
-\title{Multiple imputation of count data using side information}
+\title{multiple imputation of count data using the lori model}
 \usage{
 mi.lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, M = 25,
-  prob = 0.1, reff = T, ceff = T, rank.max = 10, thresh = 1e-05,
-  maxit = 1000, trace.it = F)
+  prob = 0.1, reff = T, ceff = T, rank.max = 10, algo = c("alt",
+  "mcgd"), thresh = 1e-05, maxit = 1000, trace.it = F)
 }
 \arguments{
 \item{Y}{[matrix, data.frame] count table (nxp).}
@@ -27,6 +27,8 @@ mi.lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, M = 25,
 
 \item{rank.max}{[integer] maximum rank of interaction matrix (smaller than min(n-1,p-1))}
 
+\item{algo}{type of algorithm to use, either one of "mcgd" (mixed coordinate gradient descent, adapted to large dimensions) or "alt" (alternating minimization, adapted to small dimensions)}
+
 \item{thresh}{[positive number] convergence tolerance of algorithm, by default \code{1e-6}.}
 
 \item{maxit}{[integer] maximum allowed number of iterations.}
@@ -44,7 +46,7 @@ mi.lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, M = 25,
 \item{Y}{original incomplete count table}
 }
 \description{
-Multiple imputation of count data using side information
+multiple imputation of count data using the lori model
 }
 \examples{
 X <- matrix(rnorm(50), 25)

@@ -2,11 +2,12 @@
 % Please edit documentation in R/lori.R
 \name{lori}
 \alias{lori}
-\title{LORI method.}
+\title{main function: analysis and imputation of incomplete count data tables
+using side information (row-column attributes).}
 \usage{
-lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, reff = T,
-  ceff = T, rank.max = 10, thresh = 1e-05, maxit = 1000,
-  trace.it = F)
+lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, intercept = F,
+  reff = T, ceff = T, rank.max = 10, algo = c("alt", "mcgd"),
+  thresh = 1e-05, maxit = 1000, trace.it = F)
 }
 \arguments{
 \item{Y}{[matrix, data.frame] count table (nxp).}
@@ -17,11 +18,15 @@ lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, reff = T,
 
 \item{lambda2}{[positive number] the regularization parameter for the covariate effects.}
 
+\item{intercept}{[boolean] whether an intercept should be fitted, default value is FALSE}
+
 \item{reff}{[boolean] whether row effects should be fitted, default value is TRUE}
 
 \item{ceff}{[boolean] whether column effects should be fitted, default value is TRUE}
 
 \item{rank.max}{[integer] maximum rank of interaction matrix (smaller than min(n-1,p-1))}
+
+\item{algo}{type of algorithm to use, either one of "mcgd" (mixed coordinate gradient descent, adapted to large dimensions) or "alt" (alternating minimization, adapted to small dimensions)}
 
 \item{thresh}{[positive number] convergence tolerance of algorithm, by default \code{1e-6}.}
 
@@ -41,7 +46,8 @@ A list with the following elements
 \item{cov}{npxK matrix of covariates}
 }
 \description{
-LORI method.
+main function: analysis and imputation of incomplete count data tables
+using side information (row-column attributes).
 }
 \examples{
 \dontshow{

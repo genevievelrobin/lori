@@ -2,7 +2,7 @@
 % Please edit documentation in R/pool.lori.R
 \name{pool.lori}
 \alias{pool.lori}
-\title{Function to aggregate lori multiple imputation results}
+\title{aggregate lori multiple imputation results}
 \usage{
 pool.lori(res.mi)
 }
@@ -17,7 +17,7 @@ pool.lori(res.mi)
 \item{pool.theta}{a list containing the pooled means (mean) and variance (var) of the interactions}
 }
 \description{
-Function to aggregate lori multiple imputation results
+aggregate lori multiple imputation results
 }
 \examples{
 X <- matrix(rnorm(50), 25)

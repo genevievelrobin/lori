@@ -1,4 +1,4 @@
-#' Function to aggregate lori multiple imputation results
+#' aggregate lori multiple imputation results
 #'
 #' @param res.mi a multiple imputation result from the function mi.lori
 #'

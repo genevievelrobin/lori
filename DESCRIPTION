@@ -17,7 +17,8 @@ Imports: svd,
 	 parallel,
 	 corpcor,
 	 foreach,
-	 FactoMineR
+	 FactoMineR,
+	 rARPACK
 Suggests: 
     knitr,
     rmarkdown,

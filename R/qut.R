@@ -1,4 +1,4 @@
-#' Automatic selection of nuclear norm regularization parameter
+#' automatic selection of nuclear norm regularization parameter
 #' @param Y A matrix of counts (contingency table).
 #' @param cov A (np)xK matrix of K covariates about rows and columns
 #' @param lambda2 A positive number, the regularization parameter for covariates main effects

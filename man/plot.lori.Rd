@@ -2,11 +2,7 @@
 % Please edit documentation in R/plot.interaction.R
 \name{plot.lori}
 \alias{plot.lori}
-\title{Plot the rows and columns of the contingency table in the Euclidean space defined by two of the
-first principal directions of the interaction matrix Theta. Theta corresponds to the interaction
-remaining after discarding the effects of the covariates. The interpretation is the following.
-A row and a column that are close in Euclidean distance interact highly. Two rows or two columns that
-are close in Euclidean distance have similar profiles.}
+\title{plot 2D displays of the row-column interactions}
 \usage{
 \method{plot}{lori}(x, axes = c(1, 2), xlim = NULL, ylim = NULL,
   invisible = c("none", "row", "col", "row.sup", "col.sup", "quali.sup"),
@@ -69,11 +65,7 @@ are close in Euclidean distance have similar profiles.}
 \item{...}{further arguments passed to or from other methods, such as cex, cex.main, ...}
 }
 \description{
-Plot the rows and columns of the contingency table in the Euclidean space defined by two of the
-first principal directions of the interaction matrix Theta. Theta corresponds to the interaction
-remaining after discarding the effects of the covariates. The interpretation is the following.
-A row and a column that are close in Euclidean distance interact highly. Two rows or two columns that
-are close in Euclidean distance have similar profiles.
+plot 2D displays of the row-column interactions
 }
 \examples{
 X = matrix(rnorm(rep(0, 15)), 5)

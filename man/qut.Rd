@@ -2,7 +2,7 @@
 % Please edit documentation in R/qut.R
 \name{qut}
 \alias{qut}
-\title{Automatic selection of nuclear norm regularization parameter}
+\title{automatic selection of nuclear norm regularization parameter}
 \usage{
 qut(Y, cov, lambda2 = 0, q = 0.95, N = 100, reff = T, ceff = T)
 }
@@ -25,7 +25,7 @@ qut(Y, cov, lambda2 = 0, q = 0.95, N = 100, reff = T, ceff = T)
 the value of $lambda_{QUT}$ to use in LoRI.
 }
 \description{
-Automatic selection of nuclear norm regularization parameter
+automatic selection of nuclear norm regularization parameter
 }
 \examples{
 X = matrix(rnorm(30), 15)

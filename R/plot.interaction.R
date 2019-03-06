@@ -1,8 +1,4 @@
-#' Plot the rows and columns of the contingency table in the Euclidean space defined by two of the
-#' first principal directions of the interaction matrix Theta. Theta corresponds to the interaction
-#' remaining after discarding the effects of the covariates. The interpretation is the following.
-#' A row and a column that are close in Euclidean distance interact highly. Two rows or two columns that
-#' are close in Euclidean distance have similar profiles.
+#' plot 2D displays of the row-column interactions
 #' @param x a lori object resulting from the lori function
 #' @param axes a vector of integers of length two, indicating which axes to plot (c(1,2) means that the first two directions are plotted).
 #' @param xlim a vector of length two indicating the limits of the plot abscissa.
@@ -28,7 +24,7 @@
 #' @param legend a list of arguments that defines the legend if needed (when individuals are drawn according to a variable); see the arguments of the function legend
 #' @param ... further arguments passed to or from other methods, such as cex, cex.main, ...
 #' @method plot lori
-#' @S3method plot lori
+#' @export
 #' @examples
 #' X = matrix(rnorm(rep(0, 15)), 5)
 #' Y <- matrix(rpois(length(c(X)), exp(c(X))), 5)

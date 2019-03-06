@@ -1,4 +1,4 @@
-grad <- function(Y, cov, alpha, beta, epsilon, theta){
+grad <- function(Y, cov, mu, alpha, beta, epsilon, theta){
   #internal function to compute gradient of main effects coefficients
   d <- dim(Y)
   n <- d[1]
@@ -7,7 +7,7 @@ grad <- function(Y, cov, alpha, beta, epsilon, theta){
   Omega <- !is.na(Y)
   q <- ncol(cov)
   grad <- rep(0, n+p+q)
-  X <- matrix(rep(alpha, p), nrow=n)
+  X <- mu+matrix(rep(alpha, p), nrow=n)
   X <- X + matrix(rep(beta, each=n), nrow=n)
   X <- X + matrix(cov%*% epsilon, nrow=n) + theta
   grad[1:n] <- rowSums(Omega*(-Y+exp(X)), na.rm=T)/m
