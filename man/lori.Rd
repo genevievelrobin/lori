@@ -2,12 +2,31 @@
 % Please edit documentation in R/lori.R
 \name{lori}
 \alias{lori}
-\title{main function: analysis and imputation of incomplete count data tables
-using side information (row-column attributes).}
+\title{The lori method implements a method to analyze and impute
+incomplete count tables. An important feature of the method
+is that it can take into account main effects of rows and
+columns, as well as effects of continuous or categorical
+covariates, and interaction. The estimation procedure is
+based on minimizing a Poisson loss penalized by a Lasso
+type penalty (sparse vector of covariate effects) and a
+nuclear norm penalty inducing a low-rank interaction matrix
+(a few latent factors summarize the interactions).}
 \usage{
-lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, intercept = F,
-  reff = T, ceff = T, rank.max = 10, algo = c("alt", "mcgd"),
-  thresh = 1e-05, maxit = 1000, trace.it = F)
+lori(
+  Y,
+  cov = NULL,
+  lambda1 = NULL,
+  lambda2 = NULL,
+  intercept = T,
+  reff = T,
+  ceff = T,
+  rank.max = 2,
+  algo = c("alt", "mcgd"),
+  thresh = 1e-05,
+  maxit = 100,
+  trace.it = F,
+  parallel = F
+)
 }
 \arguments{
 \item{Y}{[matrix, data.frame] count table (nxp).}
@@ -33,6 +52,8 @@ lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, intercept = F,
 \item{maxit}{[integer] maximum allowed number of iterations.}
 
 \item{trace.it}{[boolean] whether convergence information should be printed}
+
+\item{parallel}{[boolean] whether computations should be performed in parallel on multiple cores}
 }
 \value{
 A list with the following elements
@@ -46,8 +67,15 @@ A list with the following elements
 \item{cov}{npxK matrix of covariates}
 }
 \description{
-main function: analysis and imputation of incomplete count data tables
-using side information (row-column attributes).
+The lori method implements a method to analyze and impute
+incomplete count tables. An important feature of the method
+is that it can take into account main effects of rows and
+columns, as well as effects of continuous or categorical
+covariates, and interaction. The estimation procedure is
+based on minimizing a Poisson loss penalized by a Lasso
+type penalty (sparse vector of covariate effects) and a
+nuclear norm penalty inducing a low-rank interaction matrix
+(a few latent factors summarize the interactions).
 }
 \examples{
 \dontshow{

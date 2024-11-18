@@ -2,7 +2,11 @@
 % Please edit documentation in R/pool.lori.R
 \name{pool.lori}
 \alias{pool.lori}
-\title{aggregate lori multiple imputation results}
+\title{The pool.lori method aggregates lori multiple imputation results.
+Multiple imputation allows to produce estimates of missing
+values, as well as intervals of variability. The classical
+procedure is to perform multiple imputation using the mi.lori
+method, and to aggregate them using the pool.lori method.}
 \usage{
 pool.lori(res.mi)
 }
@@ -17,7 +21,11 @@ pool.lori(res.mi)
 \item{pool.theta}{a list containing the pooled means (mean) and variance (var) of the interactions}
 }
 \description{
-aggregate lori multiple imputation results
+The pool.lori method aggregates lori multiple imputation results.
+Multiple imputation allows to produce estimates of missing
+values, as well as intervals of variability. The classical
+procedure is to perform multiple imputation using the mi.lori
+method, and to aggregate them using the pool.lori method.
 }
 \examples{
 X <- matrix(rnorm(50), 25)

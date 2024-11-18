@@ -1,4 +1,8 @@
-#' aggregate lori multiple imputation results
+#' The pool.lori method aggregates lori multiple imputation results.
+#' Multiple imputation allows to produce estimates of missing
+#' values, as well as intervals of variability. The classical
+#' procedure is to perform multiple imputation using the mi.lori
+#' method, and to aggregate them using the pool.lori method.
 #'
 #' @param res.mi a multiple imputation result from the function mi.lori
 #'

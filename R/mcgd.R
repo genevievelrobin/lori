@@ -2,9 +2,9 @@ mcgd <- function(Y,
                  lambda1,
                  lambda2,
                  cov = NULL,
-                 rank.max = 10,
-                 thresh = 1e-6,
-                 maxit = 1e3,
+                 rank.max = 2,
+                 thresh = 1e-5,
+                 maxit = 100,
                  trace.it = F,
                  intercept = F,
                  reff = T,
@@ -75,7 +75,7 @@ mcgd <- function(Y,
         -Y * (mu + alpmat + betmat + epsmat + theta) + exp(mu + alpmat + betmat +
                                                              epsmat + theta),
         na.rm = T
-      ) / m + lambda1 * R + sum(lambda2 * c(abs(epsilon), abs(alpha), abs(beta)))
+      ) + lambda1 * R + sum(lambda2 * c(abs(alpha), abs(beta),abs(epsilon)))
     while (flag) {
       step <- 0.5 * step
       mat <-
@@ -94,7 +94,7 @@ mcgd <- function(Y,
           -Y * (mu + alpmat + betmat + epsmat + theta) + exp(mu + alpmat + betmat +
                                                                epsmat + theta),
           na.rm = T
-        ) / m + lambda1 * R + sum(lambda2 * c(abs(epsilon), abs(alpha), abs(beta))) - ref.obj
+        ) + lambda1 * R + sum(lambda2 * c( abs(alpha), abs(beta)),abs(epsilon)) - ref.obj
       flag <- diff > thresh * abs(ref.obj)
       step <- 0.5 * step
     }
@@ -111,7 +111,7 @@ mcgd <- function(Y,
     obj0 <- obj0 + sum(-(Y * param) + exp(param), na.rm = T)
 
     obj0 <-
-      obj0 + sum(lambda2 * c(abs(epsilon), abs(alpha), abs(beta))) + lambda1 *
+      obj0 + sum(lambda2 * c(abs(alpha), abs(beta),abs(epsilon))) + lambda1 *
       R
     while ((flag)) {
       step <- 0.5 * step
@@ -143,7 +143,7 @@ mcgd <- function(Y,
       obj <- obj + sum(-(Y * param) + exp(param), na.rm = T)
 
       obj <-
-        obj + sum(lambda2 * c(abs(epsilon), abs(alpha), abs(beta))) + lambda1 *
+        obj + sum(lambda2 * c(abs(alpha), abs(beta),abs(epsilon))) + lambda1 *
         R
       flag <- (obj > obj0 + thresh * abs(obj0))
       if (step <= 1e-10)
@@ -154,7 +154,7 @@ mcgd <- function(Y,
     obj <- low_bound
     obj <- obj + sum(-(Y * param) + exp(param), na.rm = T)
     obj <-
-      obj + sum(lambda2 * c(abs(epsilon), abs(alpha), abs(beta))) + lambda1 *
+      obj + sum(lambda2 * c(abs(alpha), abs(beta),abs(epsilon))) + lambda1 *
       R
     objective <- c(objective, obj)
     U <- obj / lambda1

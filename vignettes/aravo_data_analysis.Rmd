@@ -1,0 +1,59 @@
+---
+title: "Aravo data analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{aravo_data_analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r setup}
+library(lori)
+set.seed(123)
+```
+
+# Brief data description
+
+The Aravo data set (Choler, 2005) consists of three main data tables. First, a count table collecting the abundance of 82 species of alpine plants in 75 sites in France (the rows correspond to the environments, and the column to species). We will denote this abundance table $Y\in\mathbb{N}^{n\times p}$. Second, a matrix containing 6 geographical and meteorological characteristics of the sites. Third, a matrix containing 8 species traits (height, spread, etc.). We denote $R$ the matrix of row covariates, and $C$ the matrix of column covariates.
+
+First, we put the data in the right shape to apply the lori function.
+```{r load the data}
+data(aravo)
+Y <- aravo$spe
+R <- aravo$env
+R <- R[, c(1,2,4,6)]
+C <- aravo$traits
+d <- dim(Y)
+n <- d[1]
+p <- d[2]
+U <- covmat(n,p,R,C)
+U <- scale(U)
+```
+
+
+# Multiple imputation with the lori method
+
+We start by tuning the parameters of the lori method
+
+```{r}
+# Tune regularization parameter
+res_cv <- cv.lori(Y, U, reff=F, ceff=F, trace.it=F, len=5) 
+res_lori <- lori(Y, U, lambda1 = res_cv$lambda1, lambda2=res_cv$lambda2, reff=F, ceff=F)
+```
+
+The multiple imputation function may be used to obtain intervals of variability for the estimated coefficients. The following command performs multiple imputation, with 20 replications. Then, one can visualize the variability of the main effects coefficients with a boxplot.
+
+```{r}
+# multiple imputation
+res_mi <- mi.lori(Y, U, lambda1 = res_cv$lambda1, lambda2=res_cv$lambda2, reff=F, ceff=F, M=20)
+boxplot(res_mi$mi.epsilon)
+```
+

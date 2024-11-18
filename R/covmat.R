@@ -14,7 +14,7 @@
 #' R <- matrix(rnorm(10), 5)
 #' C <- matrix(rnorm(9), 3)
 #' covs <- covmat(5,3,R,C)
-covmat <- function(n, p, R=NULL, C=NULL, E=NULL, center=T) {
+covmat <- function(n, p, R=NULL, C=NULL, E=NULL, center=F) {
   if(center){
     if(!is.null(R)) R <- scale(R, scale=F)
     if(!is.null(C)) C <- scale(C, scale=F)

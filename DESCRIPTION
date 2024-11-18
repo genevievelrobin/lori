@@ -1,26 +1,20 @@
 Package: lori
 Type: Package
-Title: Low-Rank Interactions in Count Data with Covariates
-Version: 2.1.2
-Authors@R: person("Genevieve", "Robin", email = "genevieve.robin@polytechnique.edu",
+Title: Imputation of High-Dimensional Count Data using Side Information
+Version: 2.2.2
+Authors@R: person("Genevieve", "Robin", email = "genevieve.robin@cnrs.fr",
   role = c("aut", "cre"))
-Maintainer: Genevieve Robin <genevieve.robin@polytechnique.edu>
-Description: Analysis, imputation, and multiple imputation of count data using covariates. LORI uses a log-linear model where main row and column effects are decomposed as regression terms on known covariates. A residual low-rank interaction term is also fitted. LORI returns estimates of covariate effects and interactions, as well as an imputed count table. The package also contains a multiple imputation procedure.
+Maintainer: Genevieve Robin <genevieve.robin@cnrs.fr>
+Description: Analysis, imputation, and multiple imputation of count data using covariates. LORI uses a log-linear Poisson model where main row and column effects, as well as effects of known covariates and interaction terms can be fitted. The estimation procedure is based on the convex optimization of the Poisson loss penalized by a Lasso type penalty and a nuclear norm. LORI returns estimates of main effects, covariate effects and interactions, as well as an imputed count table. The package also contains a multiple imputation procedure. The methods are described in Robin, Josse, Moulines and Sardy (2019) <arXiv:1703.02296v4>.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Imports: svd,
-         glmnet,
-	 stats,
-	 data.table,
-	 doParallel,
-	 parallel,
-	 corpcor,
-	 foreach,
-	 FactoMineR,
-	 rARPACK
-Suggests: 
-    knitr,
-    rmarkdown,
-    testthat
-RoxygenNote: 6.1.0
+Depends: stats, data.table, rARPACK, svd, R (>= 2.10)
+Suggests: knitr, rmarkdown, testthat
+VignetteBuilder: knitr
+RoxygenNote: 7.1.1
+NeedsCompilation: no
+Packaged: 2020-12-16 11:06:28 UTC; genevieverobin
+Author: Genevieve Robin [aut, cre]
+Repository: CRAN
+Date/Publication: 2020-12-16 14:00:06 UTC

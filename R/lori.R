@@ -1,5 +1,13 @@
-#' main function: analysis and imputation of incomplete count data tables
-#' using side information (row-column attributes).
+#' The lori method implements a method to analyze and impute
+#' incomplete count tables. An important feature of the method
+#' is that it can take into account main effects of rows and
+#' columns, as well as effects of continuous or categorical
+#' covariates, and interaction. The estimation procedure is
+#' based on minimizing a Poisson loss penalized by a Lasso
+#' type penalty (sparse vector of covariate effects) and a
+#' nuclear norm penalty inducing a low-rank interaction matrix
+#' (a few latent factors summarize the interactions).
+#'
 #'
 #' @param Y [matrix, data.frame] count table (nxp).
 #' @param cov [matrix, data.frame] design matrix (np*q) in order row1xcol1,row2xcol2,..,rownxcol1,row1xcol2,row2xcol2,...,...,rownxcolp
@@ -13,7 +21,8 @@
 #' @param thresh [positive number] convergence tolerance of algorithm, by default \code{1e-6}.
 #' @param maxit [integer] maximum allowed number of iterations.
 #' @param trace.it [boolean] whether convergence information should be printed
-#' @import glmnet stats
+#' @param parallel [boolean] whether computations should be performed in parallel on multiple cores
+#' @import stats rARPACK svd parallel
 #' @export
 #' @return A list with the following elements
 #' \item{X}{nxp matrix of log of expected counts}
@@ -24,6 +33,9 @@
 #' \item{imputed}{nxp matrix of imputed counts}
 #' \item{means}{nxp matrix of expected counts (exp(X))}
 #' \item{cov}{npxK matrix of covariates}
+#' \item{nparam}{number of estimated parameters in the model}
+#' \item{dfres}{residual degrees of freedom}
+#' \item{chisq}{sum of squared deviations between observed and expected counts normalized by the expected value}
 #' @examples
 #' \dontshow{
 #' X <- matrix(rnorm(50), 25)
@@ -35,32 +47,27 @@ lori <-
            cov = NULL,
            lambda1 = NULL,
            lambda2 = NULL,
-           intercept = F,
+           intercept = T,
            reff = T,
            ceff = T,
-           rank.max = 10,
+           rank.max = 2,
            algo = c("alt","mcgd"),
            thresh = 1e-5,
-           maxit = 1e3,
-           trace.it = F)
+           maxit = 100,
+           trace.it = F,
+           parallel=F)
   {
     Y <- as.matrix(Y)
     d <- dim(Y)
     n <- d[1]
     p <- d[2]
-    if (!is.null(cov))
+    if (!is.null(cov)){
+      cov <- as.matrix(cov)
       q <- ncol(cov)
+    }
     else
       q <- 0
     rank.max = min(n - 1, p - 1, rank.max)
-    #lambda2 <- rep(lambda2,n+p+q)
-    #covsc <- cov[, apply(cov, 2, is.factor)==F]
-    #sc <- mean(apply(covsc, 2, sd))
-    #if(is.na(sc)) sc <- 1
-    #if(is.null(sc)) sc <- 1
-    #if(sc==0) sc <- 1
-    #lambda2[1:n] <- lambda2[1:n]*sqrt(p*(1-1/n)^2/(n*p))/sc
-    #lambda2[(n+1):(n+p)] <- lambda2[(n+1):(n+p)]*sqrt(n*(1-1/p)^2/(n*p))/sc
     algo <- match.arg(algo,c("alt","mcgd"),several.ok=T)[1]
     if(min(n,p)<3) algo <- "alt"
     if(algo=="mcgd"){
@@ -87,7 +94,8 @@ lori <-
         rank.max = rank.max,
         intercept = intercept,
         reff = reff,
-        ceff = ceff
+        ceff = ceff,
+        parallel=F
       )
     }
     X <- res$X
@@ -96,9 +104,14 @@ lori <-
     beta <- res$beta
     epsilon <- res$epsilon
     theta <- res$theta
-    imputed <- matrix(rpois(n*p, lambda=c(exp(X))), nrow=n)
+    imputed <- round(exp(X))
     imputed[!is.na(Y)] <- Y[!is.na(Y)]
     means <- exp(X)
+    nparam <- sum(abs(alpha)>0) + sum(abs(beta)>0) + sum(abs(epsilon)>0)
+    r <- min(sum(abs(svd(theta)$d)>0), rank.max)
+    nparam <- nparam + r*(nrow(Y) + ncol(Y) - r)
+    dfres <- nrow(Y)*ncol(Y) - nparam
+    chisq <- sum((Y - means)^2/means, na.rm=T)
     res2 <-
       structure(
         list(
@@ -111,11 +124,12 @@ lori <-
           imputed = imputed,
           means = means,
           cov = cov,
-          objective=res$objective
+          objective=res$objective,
+          nparam=nparam,
+          dfres=dfres,
+          chisq=chisq
         )
       )
     class(res2) <- c("lori", "list")
     return(res2)
   }
-
-

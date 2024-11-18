@@ -2,12 +2,30 @@
 % Please edit documentation in R/cv.lori.R
 \name{cv.lori}
 \alias{cv.lori}
-\title{selection of the regularization
-parameters (lambda1 and lambda2) of the lori function by cross-validation}
+\title{The cv.lori method performs automatic selection of the
+regularization parameters (lambda1 and lambda2) used in
+the lori function. These parameters are selected by
+cross-validation. The classical procedure is to apply
+cv.lori to the data to select the regularization parameters,
+and to then impute and analyze the data using the lori
+function (or mi.lori for multiple imputation).}
 \usage{
-cv.lori(Y, cov = NULL, intercept = F, reff = T, ceff = T,
-  rank.max = 10, N = 5, len = 20, prob = 0.2, algo = c("alt",
-  "mcgd"), thresh = 1e-06, maxit = 100, trace.it = F, parallel = F)
+cv.lori(
+  Y,
+  cov = NULL,
+  intercept = T,
+  reff = T,
+  ceff = T,
+  rank.max = 5,
+  N = 5,
+  len = 20,
+  prob = 0.2,
+  algo = c("alt", "mcgd"),
+  thresh = 1e-05,
+  maxit = 10,
+  trace.it = F,
+  parallel = F
+)
 }
 \arguments{
 \item{Y}{[matrix, data.frame] abundance table (nxp)}
@@ -36,7 +54,7 @@ cv.lori(Y, cov = NULL, intercept = F, reff = T, ceff = T,
 
 \item{trace.it}{[boolean] whether information about convergence should be printed}
 
-\item{parallel}{[boolean] whether the N-fold cross-validation should be parallelized, default value is TRUE}
+\item{parallel}{[boolean] whether computations should be performed in parallel on multiple cores}
 }
 \value{
 A list with the following elements
@@ -45,8 +63,13 @@ A list with the following elements
 \item{errors}{a table containing the prediction errors for all pairs of parameters}
 }
 \description{
-selection of the regularization
-parameters (lambda1 and lambda2) of the lori function by cross-validation
+The cv.lori method performs automatic selection of the
+regularization parameters (lambda1 and lambda2) used in
+the lori function. These parameters are selected by
+cross-validation. The classical procedure is to apply
+cv.lori to the data to select the regularization parameters,
+and to then impute and analyze the data using the lori
+function (or mi.lori for multiple imputation).
 }
 \examples{
 X <- matrix(rnorm(20), 10)

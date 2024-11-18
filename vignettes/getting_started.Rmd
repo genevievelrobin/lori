@@ -1,0 +1,154 @@
+---
+title: "Getting started"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{getting_started}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The R package lori (https://CRAN.R-project.org/package=lori) contains methods for the analysis, single imputation, and multiple imputation of incomplete count data with side information. In this tutorial, the models and procedures are recalled as concisely as possible, and we display the main functionalities of the lori package. That is, a single imputation procedure–which also returns estimates of main effects and interactions–a cross-validation function to select the regularization parameters, and a function to perform multiple imputation. We also provide reusable code using a simulated toy example.
+```{r setup}
+library(lori)
+set.seed(123)
+```
+
+# General model
+
+Consider an abundance table $Y\in \mathbb{N}^{n\times p}$, with missing values. Assume that three other tables are available: $R\in \mathbb{R}^{n\times K_1}$, containing covariates about the rows of $Y$ (geographical information for instance), $C\in \mathbb{R}^{p\times K_2}$, containing covariates about the columns of $Y$ (yearly meteorological indices), and $E\in \mathbb{R}^{np\times K_3}$ containing co- variates about the row-column pairs (yearly meteorological information at the sites’ scale, yearly economical indices of the sites’ country, etc.). We denote by $R_i$ (resp. $C_i$, $E_i$) the $i$-th row of $R$ (resp of $C$, $E$).
+
+The model implemented in the lori package is the following log-linear model:
+$$Y_{i,j}\sim\mathcal{P}(\exp(X_{i,j})), \quad X_{i,j} = \alpha_i + \beta_j + \sum_{k=1}^{K_1+K_2}U^{i,j}_k\epsilon_k + \Theta_{i,j},
+$$
+where $U \in \mathbb{R}^{np\times(K1+K2+K3)}$ denotes the covariate matrix concatenating all the available covariate information, and whose $(j-1)n+i$-th row, for $1\leq i\leq n$ $1\leq j\leq p$ are defined by: $U_{(j-1)n+i} = (R_i, C_j, E_{j-1}n+i)$. Note that the function covmat is implemented to build $U$ from any combination of $R$, $C$ and $E$.
+
+# Simulated data
+
+We start by generating simulated data as follows
+
+```{r simulate covariates}
+## covariates
+n <- 10 # number of rows
+p <- 6 # number of columns
+K1 <- 2 # number of row covariates
+K2 <- 2 # number of column covariates
+K3 <- 3 # number of (rowxcolumn) covariates
+R <- matrix(rnorm(n*K1), nrow=n) # matrix of row covariates
+C <- matrix(rnorm(p*K2), nrow=p) # matrix of column covariates
+E <- matrix(rnorm(n*p*K3), nrow=n*p) # matrix of  (rowxcolumn) covariates
+U <- covmat(n, p, R, C, E)
+U <- scale(U)
+
+```
+
+Note that the function also supports creating U from any singleton or pair of the matrices $(R,C,E)$, provided that the arguments are in the correct order. In other words, all the commands below may also be used:
+
+```{r eval=FALSE}
+U <- covmat(n, p, R)
+U <- covmat(n, p, C)
+U <- covmat(n, p, R, C)
+U <- covmat(n, p, R=R, E=E)
+U <- covmat(n, p, C=C, E=E)
+```
+
+Then we simulate the parameters of the models.
+
+```{r simulate parameters}
+## parameters
+alpha0 <- rep(0, n)
+alpha0[1:6] <- 1
+beta0 <- rep(0, p)
+beta0[1:4] <- 1
+epsilon0 <- rep(0, K1+K2+K3)
+epsilon0[5:6] <- 0.2
+r <- 2 #rank of interaction matrix theta0
+theta0 <- 0.1*matrix(rnorm(n*r), nrow=n)%*%diag(r:1)%*%matrix(rnorm(p*r), nrow=r)
+theta0 <- sweep(theta0, 2, colMeans(theta0))
+theta0 <- sweep(theta0, 1, rowMeans(theta0))
+
+```
+
+Finally we build the matrix of log-intensities, sample corresponding Poisson data, and add MCAR missing values.
+
+```{r intensities and data}
+## construct x0
+x0 <- matrix(rep(alpha0, p), nrow=n) #row effects
+x0 <- x0 + matrix(rep(beta0, each=n), nrow=n) #add column effects
+x0 <- x0 + matrix(U%*% epsilon0, nrow=n) #add cov effects
+x0 <- x0 + theta0 #add interactions
+
+## sample count data y
+y0 <- matrix(rpois(n*p, lambda = c(exp(x0))), nrow = n)
+
+## add missing values
+p_miss <- 0.2
+y <- y0
+y[sample(1:(n*p), round(p_miss*n*p))] <- NA
+```
+ # Estimation and imputation
+ 
+ The purpose of the lori package is dual: to estimate the parameters $\alpha$, $\beta$, $\epsilon$, $\Theta$, and to impute the count table $Y$. The corresponding input  are the incomplete count data $Y$ and (optionally) the covariate matrix $U$. The estimation procedure is:
+$$(\hat\alpha, \hat\beta, \hat\epsilon, \hat \Theta)\in \operatorname{argmin} \mathcal{L}(Y; \alpha, \beta, \epsilon, \Theta) + \lambda_1\left\|\Theta \right\|_* + \lambda_2\left(\left\|\alpha \right\|_1+\left\|\beta \right\|_1+\left\|\epsilon \right\|_1\right),
+$$
+where $\mathcal{L}(Y; \alpha, \beta, \epsilon, \Theta)$ is the Poisson negative log-likelihood. With $\Omega$ the mask encoding missing values ($\Omega_{ij} =1$ if entry $(i,j)$ is observed and $0$ otherwise): $$
+\sum_{(i,j)}\Omega_{i,j}[-Y_{i,j}(\alpha_i+\beta_j + \sum_{k=1}^{K}\epsilon_{k}U(i,j)_k + \Theta_{i,j})
+ + \exp(\alpha_i+\beta_j + \sum_{k=1}^{K}\epsilon_{k}U(i,j)_k + \Theta_{i,j})],
+$$
+The intuition is that the negative log-likelihood is minimized (the parameters should fit the data as much as possible) with additional regularization terms which constrain the parameters and perform model selection automatically. The first penalty term, $\norm{\Theta}[*]$ corresponds to the nuclear norm of $\Theta$ and induces low-rank solutions: this is interpreted as assuming that a few latent factors summarize the interactions. The second term, $\left\|\alpha \right\|_1+\left\|\beta \right\|_1+\left\|\epsilon \right\|_1$, corresponds to the sum of the $\ell_1$ norms of the vectors $\alpha$, $\beta$ and $\epsilon$:
+$$\left\|\alpha \right\|_1+\left\|\beta \right\|_1+\left\|\epsilon \right\|_1 = \sum_{i=1}^{m_1}|\alpha_i| + \sum_{j=1}^{m_2}|\beta_j| + \sum_{k=1}^{K}|\epsilon_k|.$$
+This penalty induces sparse solutions (vectors $\alpha$, $\beta$ and $\epsilon$ containing many zeros), meaning that not all rows, columns and covariates have an effect on the counts. The trade-off between the data-fitting term and the penalties is controlled by the regularization parameters $\lambda_1$ and $\lambda_2$. As $\lambda_1$ increases, the rank of the solution $\hat\Theta$ decreases (the number of latent factors decreases). As $\lambda_2$ increases, the number of nonzero values in $\hat\alpha$, $\hat\beta$ and $\hat\epsilon$ decreases (the number of active rows, columns and covariates decreases).
+
+In R, the estimation is done as follows, for some predefined regularization parameters $\lambda_1$ and $\lambda_2$:
+
+```{r estimation}
+## lori estimation
+lambda1 <- 0.1
+lambda2 <- 0.1
+m <- sum(!is.na(y))
+t <- Sys.time()
+res.lori <- lori(y, U, 0.1, 0.1)
+t <- Sys.time()-t
+```
+
+However, the quality of the estimation is highly dependent on the choice of $\lambda_1$ and $\lambda_2$, and thus we provide a cross-validation function to select them automatically:
+
+```{r cross-validation}
+res.cv <- cv.lori(y, U, trace.it = F, len=5)
+res.lori <- lori(y, U, res.cv$lambda1, res.cv$lambda2)
+```
+ The estimated parameters are accessed as follows
+```{r}
+res.lori$alpha
+res.lori$beta
+res.lori$espilon
+res.lori$theta
+
+```
+ 
+The function \texttt{lori} also returns imputed values for the missing entries in $\Y$, based on these point estimates. For each missing entry, the predicted value is given by
+$$\hat{Y}_{i,j} = \exp\left(\hat\alpha_i + \hat\beta_j + \sum_{k=1}^{K_1+K_2}U_{(j-1)n+i,k}\hat\epsilon_k + \hat\Theta_{i,j}\right).
+$$
+The imputed data set $\hatY$, such that $\hat{Y}_{i,j} = Y_{i,j}$ if $Y_{i,j}$ is observed, and $\hat{Y}_{i,j}$ given by the equation above otherwise, is accessed as follows:
+
+```{r}
+res.lori$imputed
+```
+
+
+
+# Multiple imputation
+The function mi.lori performs multiple imputation, based on the single imputation procedure described above. To produce $M$ imputed data sets, a two-step bootstrap procedure is applied. Then, the multiple imputations may be pooled using the function pool.lori. Note that, by default, the parameter $M$ is set to 100. The entire procedure goes as follows in R:
+
+```{r multiple imputation}
+res.mi <- mi.lori(y, U, res.cv$lambda1, res.cv$lambda2)
+res.pool <- pool.lori(res.mi)
+boxplot(res.mi$mi.beta, pch="", names=paste("col", 1:p))
+```
+

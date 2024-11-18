@@ -4,7 +4,7 @@
 \alias{covmat}
 \title{covmat}
 \usage{
-covmat(n, p, R = NULL, C = NULL, E = NULL, center = T)
+covmat(n, p, R = NULL, C = NULL, E = NULL, center = F)
 }
 \arguments{
 \item{n}{number of rows}

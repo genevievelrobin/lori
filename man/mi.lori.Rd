@@ -2,11 +2,27 @@
 % Please edit documentation in R/mi.lori.R
 \name{mi.lori}
 \alias{mi.lori}
-\title{multiple imputation of count data using the lori model}
+\title{The mi.lori performs M multiple imputations using the
+lori method. Multiple imputation allows to produce estimates of missing
+values, as well as intervals of variability. The classical
+procedure is to perform M multiple imputations using the mi.lori
+method, and to aggregate them using the pool.lori method.}
 \usage{
-mi.lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, M = 25,
-  prob = 0.1, reff = T, ceff = T, rank.max = 10, algo = c("alt",
-  "mcgd"), thresh = 1e-05, maxit = 1000, trace.it = F)
+mi.lori(
+  Y,
+  cov = NULL,
+  lambda1 = NULL,
+  lambda2 = NULL,
+  M = 25,
+  intercept = T,
+  reff = T,
+  ceff = T,
+  rank.max = 5,
+  algo = c("alt", "mcgd"),
+  thresh = 1e-05,
+  maxit = 1000,
+  trace.it = F
+)
 }
 \arguments{
 \item{Y}{[matrix, data.frame] count table (nxp).}
@@ -19,7 +35,7 @@ mi.lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, M = 25,
 
 \item{M}{[integer] the number of multiple imputations to perform}
 
-\item{prob}{[positive number in (0,1)] the proportion of entries to remove in bootstrap}
+\item{intercept}{[boolean] whether an intercept should be fitted, default value is FALSE}
 
 \item{reff}{[boolean] whether row effects should be fitted, default value is TRUE}
 
@@ -46,7 +62,11 @@ mi.lori(Y, cov = NULL, lambda1 = NULL, lambda2 = NULL, M = 25,
 \item{Y}{original incomplete count table}
 }
 \description{
-multiple imputation of count data using the lori model
+The mi.lori performs M multiple imputations using the
+lori method. Multiple imputation allows to produce estimates of missing
+values, as well as intervals of variability. The classical
+procedure is to perform M multiple imputations using the mi.lori
+method, and to aggregate them using the pool.lori method.
 }
 \examples{
 X <- matrix(rnorm(50), 25)
