@@ -100,10 +100,10 @@ mcgd <- function(Y,
     }
     param <- mu + alpmat + betmat + epsmat + theta
     grad_theta <- -Omega * (Y2 - exp(param))
-    svd_theta <- rARPACK::svds(grad_theta,
-                               k = 1,
-                               nu = 1,
-                               nv = 1)
+    svd_theta <- svds(grad_theta,
+                      k = 1,
+                      nu = 1,
+                      nv = 1)
     D_t <- -svd_theta$u %*% t(svd_theta$v)
     step <- 2
     flag <- TRUE

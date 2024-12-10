@@ -9,8 +9,8 @@ Description: Analysis, imputation, and multiple imputation of count data using c
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Depends: stats, data.table, rARPACK, svd, R (>= 2.10)
-Suggests: knitr, rmarkdown, testthat
+Depends: rARPACK, svd, R (>= 2.10)
+Suggests: stats, data.table, knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1
 NeedsCompilation: no

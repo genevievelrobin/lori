@@ -30,7 +30,7 @@ qut <- function(Y,
   m <- sum(!is.na(Y))
   for (i in 1:N)
   {
-    Ysimul <- matrix(stats::rpois(n * p, exp(c(X0))), nrow = n)
+    Ysimul <- matrix(rpois(n * p, exp(c(X0))), nrow = n)
     nullest2 <- lori(Ysimul, as.matrix(cov), lambda2 = lambda2, lambda1 = 1e5,
                      trace.it = F, reff=reff, ceff=ceff)
     X0simul <- nullest2$X
@@ -39,8 +39,8 @@ qut <- function(Y,
     dat <-
       sweep(Ysimul - exp(X0simul), 1, rowMeans(Ysimul - exp(X0simul)))
     lambdas[i] <-
-      (1 / m) * svd::propack.svd(dat, neig = 1, opts = list(maxiter = 1e5))$d
+      (1 / m) * propack.svd(dat, neig = 1, opts = list(maxiter = 1e5))$d
     cat('\r', i, "/", N)
   }
-  return(stats::quantile(lambdas, q)[[1]])
+  return(quantile(lambdas, q)[[1]])
 }
