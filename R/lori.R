@@ -22,7 +22,7 @@
 #' @param maxit [integer] maximum allowed number of iterations.
 #' @param trace.it [boolean] whether convergence information should be printed
 #' @param parallel [boolean] whether computations should be performed in parallel on multiple cores
-#' @import stats rARPACK svd parallel
+#' @import rARPACK svd
 #' @export
 #' @return A list with the following elements
 #' \item{X}{nxp matrix of log of expected counts}

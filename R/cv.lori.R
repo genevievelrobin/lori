@@ -27,7 +27,6 @@
 #' \item{errors}{a table containing the prediction errors for all pairs of parameters}
 
 #' @export
-#' @import data.table parallel
 #'
 #' @examples
 #' X <- matrix(rnorm(20), 10)
@@ -73,7 +72,7 @@ cv.lori <- function(Y,
     exp(seq(log(lambda1.min), log(lambda1.max), length.out = len))
   grid.lambda2 <-
     exp(seq(log(lambda2.min), log(lambda2.max), length.out = len))
-  grid <- as.matrix(data.table::CJ(grid.lambda1, grid.lambda2))
+  grid <- as.matrix(CJ(grid.lambda1, grid.lambda2))
   grid <- grid[nrow(grid):1, ]
   na_func <- function(x, prob=0.1){
     x <- as.matrix(x)

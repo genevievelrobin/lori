@@ -99,7 +99,7 @@ mi.lori <-   function(Y,
   p <- d[2]
   mi.imputed <- lapply(reslist, function(res)
     lapply(1:M, function(m)
-      matrix(stats::rpois(
+      matrix(rpois(
         n = n * p, lambda = c(res$imputed)
       ), nrow = n)))
   mi.imputed <- unlist(mi.imputed, recursive = F)
@@ -160,7 +160,7 @@ boot.lori <- function(Y) {
   p <- d[2]
   m <- sum(!is.na(Y))
   new_counts <-
-    stats::rmultinom(1, size = sum(Y, na.rm = T), prob = Y[!is.na(Y)] / m)
+    rmultinom(1, size = sum(Y, na.rm = T), prob = Y[!is.na(Y)] / m)
   Y[!is.na(Y)] <- new_counts
   return(Y)
 }
@@ -174,7 +174,7 @@ na_func <- function(x, prob=0.1){
   n_na <- round(prob*sum(!is.na(x)))
   probs <- prob*sqrt(x/sum(x))
   probs <- probs/max(probs)
-  yp[stats::rbinom(n*p, 1, prob=(1-probs))] <- NA
+  yp[rbinom(n*p, 1, prob=(1-probs))] <- NA
   return(yp)
 
 }
